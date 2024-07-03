@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -67,7 +66,23 @@ class MyHomePageState extends State<MyHomePage> {
         throw Exception('Failed to load locations');
       }
     } catch (e) {
-      print('Error loading locations: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            children: [
+              const Text(
+                'Location fetch failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                e.toString(),
+              ),
+            ],
+          ),
+        ),
+      );
+      _locations = [];
       // Handle error as needed
     }
   }
@@ -86,7 +101,23 @@ class MyHomePageState extends State<MyHomePage> {
         throw Exception('Failed to load sorters');
       }
     } catch (e) {
-      print('Error loading sorters: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            children: [
+              const Text(
+                'Sorter fetch failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                e.toString(),
+              ),
+            ],
+          ),
+        ),
+      );
+      _sorters = [];
       // Handle error as needed
     }
   }
@@ -562,7 +593,6 @@ class MyHomePageState extends State<MyHomePage> {
                 padding: const EdgeInsets.all(16.0),
                 child: FloatingActionButton(
                   onPressed: () {
-                    onPressed:
                     Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -617,19 +647,19 @@ class SearchBar extends StatelessWidget {
 
 class CreateSorterPage extends StatefulWidget {
   const CreateSorterPage({
-    Key? key,
+    super.key,
     required this.locations,
     required this.onCreated,
-  }) : super(key: key);
+  });
 
   final List<dynamic> locations;
   final Function onCreated;
 
   @override
-  _CreateSorterPageState createState() => _CreateSorterPageState();
+  CreateSorterPageState createState() => CreateSorterPageState();
 }
 
-class _CreateSorterPageState extends State<CreateSorterPage> {
+class CreateSorterPageState extends State<CreateSorterPage> {
   String sorterName = "";
   bool autoGenerateId = true;
   String uniqueId = '';
@@ -647,7 +677,7 @@ class _CreateSorterPageState extends State<CreateSorterPage> {
   @override
   void initState() {
     super.initState();
-    uniqueId = Uuid().v4(); // Initial unique ID
+    uniqueId = const Uuid().v4(); // Initial unique ID
     _uniqueIdController = TextEditingController(text: uniqueId);
   }
 
@@ -775,7 +805,7 @@ class _CreateSorterPageState extends State<CreateSorterPage> {
                     setState(() {
                       autoGenerateId = value ?? false;
                       if (autoGenerateId) {
-                        uniqueId = Uuid().v4(); // Auto-generate unique ID
+                        uniqueId = const Uuid().v4(); // Auto-generate unique ID
                         _uniqueIdController.text = uniqueId;
                       }
                     });
@@ -861,17 +891,17 @@ class _CreateSorterPageState extends State<CreateSorterPage> {
 
 class CreateLocationPage extends StatefulWidget {
   const CreateLocationPage({
-    Key? key,
+    super.key,
     required this.onCreated,
-  }) : super(key: key);
+  });
 
   final Function onCreated;
 
   @override
-  _CreateLocationPageState createState() => _CreateLocationPageState();
+  CreateLocationPageState createState() => CreateLocationPageState();
 }
 
-class _CreateLocationPageState extends State<CreateLocationPage> {
+class CreateLocationPageState extends State<CreateLocationPage> {
   String locationName = "";
   bool autoGenerateId = true;
   String uniqueId = '';
@@ -889,7 +919,7 @@ class _CreateLocationPageState extends State<CreateLocationPage> {
   @override
   void initState() {
     super.initState();
-    uniqueId = Uuid().v4(); // Initial unique ID
+    uniqueId = const Uuid().v4(); // Initial unique ID
     _uniqueIdController = TextEditingController(text: uniqueId);
   }
 
@@ -1016,7 +1046,7 @@ class _CreateLocationPageState extends State<CreateLocationPage> {
                     setState(() {
                       autoGenerateId = value ?? false;
                       if (autoGenerateId) {
-                        uniqueId = Uuid().v4(); // Auto-generate unique ID
+                        uniqueId = const Uuid().v4(); // Auto-generate unique ID
                         _uniqueIdController.text = uniqueId;
                       }
                     });

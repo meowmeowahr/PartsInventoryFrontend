@@ -1232,7 +1232,10 @@ class SorterInfoPageState extends State<SorterInfoPage> {
               },
             ),
             TextButton(
-              child: const Text('Delete'),
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.red),
+              ),
               onPressed: () {
                 Navigator.of(context).pop(true);
                 deleteSorter(sorterId!);

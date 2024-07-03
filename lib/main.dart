@@ -509,6 +509,9 @@ class MyHomePageState extends State<MyHomePage> {
                                           _sorters, sorterSearchQuery),
                                       sortersSortType)[index]['id'],
                                   locations: _locations,
+                                  onDelete: () {
+                                    _fetchSorters();
+                                  },
                                 ),
                               ),
                             );
@@ -1132,8 +1135,14 @@ class SorterInfoPage extends StatefulWidget {
   final String sorterId;
   final List<dynamic> locations;
 
-  const SorterInfoPage(
-      {super.key, required this.sorterId, required this.locations});
+  final Function onDelete;
+
+  const SorterInfoPage({
+    super.key,
+    required this.sorterId,
+    required this.locations,
+    required this.onDelete,
+  });
 
   @override
   SorterInfoPageState createState() => SorterInfoPageState();
@@ -1169,6 +1178,72 @@ class SorterInfoPageState extends State<SorterInfoPage> {
     }
   }
 
+  Future<void> deleteSorter(String sorterId) async {
+    final url = Uri.parse(
+        'http://localhost:8000/sorters/$sorterId'); // Replace with your API endpoint
+
+    try {
+      final response = await http.delete(url);
+      if (response.statusCode == 200) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sorter deleted successfully!'),
+          ),
+        );
+        widget.onDelete();
+        Navigator.of(context).pop();
+      } else {
+        throw Exception('Failed to delete sorter');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            children: [
+              const Text(
+                'Sorter delete failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                e.toString(),
+              ),
+            ],
+          ),
+        ),
+      );
+      // Handle error as needed
+    }
+  }
+
+  Future<Object> _showDeleteConfirmation(BuildContext context) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Sorter'),
+          content: const Text('Are you sure you want to delete this sorter?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+            ),
+            TextButton(
+              child: const Text('Delete'),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+                deleteSorter(sorterId!);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildInfoPane() {
     return Column(
       children: [
@@ -1198,7 +1273,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
   }
 
   Widget _buildPartsPane() {
-    return Placeholder();
+    return const Placeholder();
   }
 
   @override
@@ -1206,6 +1281,17 @@ class SorterInfoPageState extends State<SorterInfoPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_pageTitle),
+        actions: [
+          IconButton(
+            onPressed: () {
+              _showDeleteConfirmation(context);
+            },
+            icon: const Icon(
+              Icons.delete_forever,
+              color: Colors.red,
+            ),
+          )
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -1217,16 +1303,6 @@ class SorterInfoPageState extends State<SorterInfoPage> {
             } else if (snapshot.hasError) {
               return Text('Error: ${snapshot.error}');
             } else if (snapshot.hasData) {
-              final sorter = snapshot.data!;
-              // return Column(
-              //   crossAxisAlignment: CrossAxisAlignment.start,
-              //   children: [
-              //     Text(sorterName!, style: const TextStyle(fontSize: 20)),
-              //     const SizedBox(height: 8.0),
-              //     Text('ID: ${sorter['id']}',
-              //         style: const TextStyle(fontSize: 16)),
-              //   ],
-              // );
               return LayoutBuilder(
                 builder: (context, constraints) {
                   if (constraints.maxWidth > 600) {

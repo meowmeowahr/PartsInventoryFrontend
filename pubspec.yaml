@@ -31,8 +31,11 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.2.1
+  uuid: ^4.4.0
   shared_preferences: ^2.0.6
   string_2_icon: ^0.0.2
+  textfield_tags: ^3.0.1
+  material_tag_editor: ^0.1.2
 
 dev_dependencies:
   flutter_test:

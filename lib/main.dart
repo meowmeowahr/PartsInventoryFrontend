@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
+import 'package:flutter/services.dart';
 import 'package:material_tag_editor/tag_editor.dart';
 
 void main() {
@@ -498,7 +499,20 @@ class MyHomePageState extends State<MyHomePage> {
                       return Padding(
                         padding: const EdgeInsets.all(4.0),
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SorterInfoPage(
+                                  sorterId: _sortSorters(
+                                      filterSorters(
+                                          _sorters, sorterSearchQuery),
+                                      sortersSortType)[index]['id'],
+                                  locations: _locations,
+                                ),
+                              ),
+                            );
+                          },
                           style: ButtonStyle(
                             shape: MaterialStateProperty.all<
                                 RoundedRectangleBorder>(
@@ -1108,6 +1122,137 @@ class CreateLocationPageState extends State<CreateLocationPage> {
               child: const Text('Create Location'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class SorterInfoPage extends StatefulWidget {
+  final String sorterId;
+  final List<dynamic> locations;
+
+  const SorterInfoPage(
+      {super.key, required this.sorterId, required this.locations});
+
+  @override
+  SorterInfoPageState createState() => SorterInfoPageState();
+}
+
+class SorterInfoPageState extends State<SorterInfoPage> {
+  late Future<Map<String, dynamic>> _sorterInfo;
+
+  String _pageTitle = "Sorter Information";
+  String? sorterName;
+  String? sorterId;
+
+  @override
+  void initState() {
+    super.initState();
+    _sorterInfo = _fetchSorterInfo();
+  }
+
+  Future<Map<String, dynamic>> _fetchSorterInfo() async {
+    final url = Uri.parse('http://localhost:8000/sorters/${widget.sorterId}');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      setState(() {
+        _pageTitle = data["name"];
+        sorterName = data["name"];
+        sorterId = data["id"];
+      });
+      return data;
+    } else {
+      throw Exception('Failed to load sorter information');
+    }
+  }
+
+  Widget _buildInfoPane() {
+    return Column(
+      children: [
+        Icon(
+          Icons.inventory_2_rounded,
+          size: 240,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        Row(
+          children: [
+            Text("ID: $sorterId"),
+            const SizedBox(width: 4.0),
+            IconButton(
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: sorterId!))
+                      .then((_) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(const SnackBar(content: Text('Copied!')));
+                  });
+                  // copied successfully
+                },
+                icon: const Icon(Icons.copy, size: 18))
+          ],
+        )
+      ],
+    );
+  }
+
+  Widget _buildPartsPane() {
+    return Placeholder();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_pageTitle),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: FutureBuilder<Map<String, dynamic>>(
+          future: _sorterInfo,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Text('Error: ${snapshot.error}');
+            } else if (snapshot.hasData) {
+              final sorter = snapshot.data!;
+              // return Column(
+              //   crossAxisAlignment: CrossAxisAlignment.start,
+              //   children: [
+              //     Text(sorterName!, style: const TextStyle(fontSize: 20)),
+              //     const SizedBox(height: 8.0),
+              //     Text('ID: ${sorter['id']}',
+              //         style: const TextStyle(fontSize: 16)),
+              //   ],
+              // );
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth > 600) {
+                    // Two-column layout for larger screens
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: _buildInfoPane(),
+                        ),
+                        Expanded(
+                          child: _buildPartsPane(),
+                        ),
+                      ],
+                    );
+                  } else {
+                    // One-column layout for smaller screens
+                    return Column(
+                      children: [_buildInfoPane(), _buildPartsPane()],
+                    );
+                  }
+                },
+              );
+            } else {
+              return const Text('No data');
+            }
+          },
         ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 import 'package:flutter/services.dart';
@@ -206,23 +207,28 @@ class MyHomePageState extends State<MyHomePage> {
         throw Exception('Location not found');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Failed to load location!',
-                style: TextStyle(fontWeight: FontWeight.bold),
+      SchedulerBinding.instance.addPostFrameCallback(
+        (timeStamp) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Failed to load location!',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    e.toString(),
+                  ),
+                ],
               ),
-              Text(
-                e.toString(),
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       );
+
       return null;
     }
   }
@@ -362,7 +368,23 @@ class MyHomePageState extends State<MyHomePage> {
                       return Padding(
                         padding: const EdgeInsets.all(4.0),
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => LocationInfoPage(
+                                  locationId: _sortLocations(
+                                      filterLocations(
+                                          _locations, locationsSearchQuery),
+                                      locationsSortType)[index]['id'],
+                                  sorters: _sorters,
+                                  onDelete: () {
+                                    _fetchLocations();
+                                  },
+                                ),
+                              ),
+                            );
+                          },
                           style: ButtonStyle(
                             shape: MaterialStateProperty.all<
                                 RoundedRectangleBorder>(
@@ -593,7 +615,7 @@ class MyHomePageState extends State<MyHomePage> {
                                         ),
                                       ),
                                       Text(
-                                        "In: ${getLocationName(_sortSorters(filterSorters(_sorters, sorterSearchQuery), sortersSortType)[index]['location'], _locations)}",
+                                        "In: ${getLocationName(_sortSorters(filterSorters(_sorters, sorterSearchQuery), sortersSortType)[index]['location'], _locations) ?? 'LOCATION MISSING'}",
                                         style: const TextStyle(
                                           fontSize: 14,
                                         ),
@@ -1713,6 +1735,318 @@ class ModifySorterPageState extends State<ModifySorterPage> {
               child: const Text('Modify Sorter'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class LocationInfoPage extends StatefulWidget {
+  final String locationId;
+  final List<dynamic> sorters;
+
+  final Function onDelete;
+
+  const LocationInfoPage({
+    super.key,
+    required this.locationId,
+    required this.sorters,
+    required this.onDelete,
+  });
+
+  @override
+  LocationInfoPageState createState() => LocationInfoPageState();
+}
+
+class LocationInfoPageState extends State<LocationInfoPage> {
+  late Future<Map<String, dynamic>> _locationInfo;
+
+  String _pageTitle = "Location Information";
+  String? locationName;
+  String? locationId;
+  List<String>? locationTags;
+
+  @override
+  void initState() {
+    super.initState();
+    _locationInfo = _fetchLocationInfo();
+  }
+
+  Future<Map<String, dynamic>> _fetchLocationInfo() async {
+    final url =
+        Uri.parse('http://localhost:8000/locations/${widget.locationId}');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      setState(() {
+        _pageTitle = data["name"];
+        locationName = data["name"];
+        locationId = data["id"];
+        locationTags = data["tags"].split(",");
+      });
+      return data;
+    } else {
+      throw Exception('Failed to load location information');
+    }
+  }
+
+  Future<void> deleteLocation(String locationId) async {
+    final url = Uri.parse(
+        'http://localhost:8000/locations/$locationId'); // Replace with your API endpoint
+
+    try {
+      final response = await http.delete(url);
+      if (response.statusCode == 200) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Location deleted successfully!'),
+          ),
+        );
+        widget.onDelete();
+        Navigator.of(context).pop();
+      } else {
+        throw Exception('Failed to delete location');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            children: [
+              const Text(
+                'Location delete failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                e.toString(),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  String? getLocationName(String locationId, List<dynamic> locations) {
+    try {
+      final location = locations.firstWhere(
+        (location) => location['id'].toString() == locationId,
+        orElse: () => null,
+      );
+      if (location != null) {
+        return location['name']
+            .toString(); // Assuming the location contains a 'name' field
+      } else {
+        throw Exception('Location not found');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Failed to load location!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                e.toString(),
+              ),
+            ],
+          ),
+        ),
+      );
+      return null;
+    }
+  }
+
+  Future<Object> _showDeleteConfirmation(BuildContext context) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Location'),
+          content: const Text('Are you sure you want to delete this location?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+            ),
+            TextButton(
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.red),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+                deleteLocation(locationId!);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildInfoPane() {
+    return Column(
+      children: [
+        Icon(
+          Icons.inventory_2_rounded,
+          size: 240,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Flexible(
+              child: Text(
+                "ID: $locationId",
+                softWrap: true,
+              ),
+            ),
+            const SizedBox(width: 4.0),
+            IconButton(
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: locationId!))
+                      .then((_) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(const SnackBar(content: Text('Copied!')));
+                  });
+                  // copied successfully
+                },
+                icon: const Icon(Icons.copy, size: 18))
+          ],
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text("Tags:"),
+            const SizedBox(width: 4.0),
+            Flexible(
+              child: Wrap(
+                spacing: 4.0,
+                runSpacing: 4.0,
+                children: [
+                  for (var tag in locationTags ?? [])
+                    Chip(
+                      label: Text(
+                        tag,
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      labelPadding: EdgeInsets.zero,
+                      visualDensity:
+                          const VisualDensity(horizontal: 0.0, vertical: -4),
+                    )
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPartsPane() {
+    return const Placeholder();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_pageTitle),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => FutureBuilder<Map<String, dynamic>>(
+                    future: _locationInfo,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      } else if (snapshot.hasData) {
+                        return Placeholder(); // ModifyLocationPage(
+                        //     location: snapshot.data!,
+                        //     locations: widget.locations,
+                        //     onModified: () {
+                        //       Navigator.of(context).pop();
+                        //     });
+                      } else {
+                        return Text('Error: ${snapshot.error}');
+                      }
+                    },
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(
+              Icons.edit,
+            ),
+          ),
+          IconButton(
+            onPressed: () {
+              _showDeleteConfirmation(context);
+            },
+            icon: const Icon(
+              Icons.delete_forever,
+              color: Colors.red,
+            ),
+          )
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: FutureBuilder<Map<String, dynamic>>(
+          future: _locationInfo,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Text('Error: ${snapshot.error}');
+            } else if (snapshot.hasData) {
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth > 600) {
+                    // Two-column layout for larger screens
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: _buildInfoPane(),
+                        ),
+                        Expanded(
+                          child: ListView(
+                            children: [_buildPartsPane()],
+                          ),
+                        ),
+                      ],
+                    );
+                  } else {
+                    // One-column layout for smaller screens
+                    return ListView(
+                      children: [
+                        _buildInfoPane(),
+                        const SizedBox(
+                          height: 8.0,
+                        ),
+                        _buildPartsPane()
+                      ],
+                    );
+                  }
+                },
+              );
+            } else {
+              return const Text('No data');
+            }
+          },
         ),
       ),
     );

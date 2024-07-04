@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
@@ -192,6 +191,40 @@ class MyHomePageState extends State<MyHomePage> {
 
       return name.contains(query) || tags.any((tag) => tag.contains(query));
     }).toList();
+  }
+
+  String? getLocationName(String locationId, List<dynamic> locations) {
+    try {
+      final location = locations.firstWhere(
+        (location) => location['id'].toString() == locationId,
+        orElse: () => null,
+      );
+      if (location != null) {
+        return location['name']
+            .toString(); // Assuming the location contains a 'name' field
+      } else {
+        throw Exception('Location not found');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Failed to load location!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                e.toString(),
+              ),
+            ],
+          ),
+        ),
+      );
+      return null;
+    }
   }
 
   @override
@@ -546,6 +579,12 @@ class MyHomePageState extends State<MyHomePage> {
                                             sortersSortType)[index]['name'],
                                         style: const TextStyle(
                                           fontSize: 18,
+                                        ),
+                                      ),
+                                      Text(
+                                        "In: ${getLocationName(_sortSorters(filterSorters(_sorters, sorterSearchQuery), sortersSortType)[index]['location'], _locations)}",
+                                        style: const TextStyle(
+                                          fontSize: 14,
                                         ),
                                       ),
                                       Text(
@@ -1178,7 +1217,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
         sorterLocation = data["location"];
         sorterTags = data["tags"].split(",");
       });
-      sorterLocationName = await getLocationName(context, sorterLocation!);
+      sorterLocationName = getLocationName(sorterLocation!, widget.locations);
       return data;
     } else {
       throw Exception('Failed to load sorter information');
@@ -1223,22 +1262,19 @@ class SorterInfoPageState extends State<SorterInfoPage> {
     }
   }
 
-  Future<String?> getLocationName(
-      BuildContext context, String locationId) async {
-    final url = Uri.parse(
-        'http://localhost:8000/locations/$locationId'); // Replace with your API endpoint
-
+  String? getLocationName(String locationId, List<dynamic> locations) {
     try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        final locationData = jsonDecode(response.body);
-        return locationData[
-            'name']; // Assuming the response contains a 'name' field
+      final location = locations.firstWhere(
+        (location) => location['id'].toString() == locationId,
+        orElse: () => null,
+      );
+      if (location != null) {
+        return location['name']
+            .toString(); // Assuming the location contains a 'name' field
       } else {
-        throw Exception('Failed to load location');
+        throw Exception('Location not found');
       }
     } catch (e) {
-      if (!context.mounted) return null;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Column(

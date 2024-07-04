@@ -1556,10 +1556,11 @@ class ModifySorterPage extends StatefulWidget {
 }
 
 class ModifySorterPageState extends State<ModifySorterPage> {
-  late String sorterName;
   late String uniqueId;
   String? selectedLocation;
   List<String> values = [];
+
+  late TextEditingController _sorterNameController;
 
   void _onTagDetete(int index) {
     setState(() {
@@ -1570,10 +1571,11 @@ class ModifySorterPageState extends State<ModifySorterPage> {
   @override
   void initState() {
     super.initState();
-    sorterName = widget.sorter['name'];
     uniqueId = widget.sorter['id'];
     selectedLocation = widget.sorter['location'];
     values = widget.sorter['tags'].split(',');
+
+    _sorterNameController = TextEditingController(text: widget.sorter['name']);
   }
 
   @override
@@ -1613,7 +1615,7 @@ class ModifySorterPageState extends State<ModifySorterPage> {
           'Content-Type': 'application/json; charset=UTF-8',
         },
         body: jsonEncode(<String, dynamic>{
-          'name': sorterName,
+          'name': _sorterNameController.text,
           'id': uniqueId,
           'location': selectedLocation,
           'icon': 'blank',
@@ -1682,17 +1684,21 @@ class ModifySorterPageState extends State<ModifySorterPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            TextField(
-              decoration: InputDecoration(
-                border: const OutlineInputBorder(),
-                labelText: 'Name for Sorter',
-                errorText: sorterName.isEmpty ? "Value can't be empty" : null,
-              ),
-              onChanged: (value) {
-                sorterName = value;
-              },
-              controller: TextEditingController(text: sorterName),
-            ),
+            ValueListenableBuilder(
+                // Note: pass _controller to the animation argument
+                valueListenable: _sorterNameController,
+                builder: (context, TextEditingValue value, __) {
+                  return TextField(
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      labelText: 'Name for Sorter',
+                      errorText: _sorterNameController.text.isEmpty
+                          ? "Value can't be empty"
+                          : null,
+                    ),
+                    controller: _sorterNameController,
+                  );
+                }),
             const SizedBox(height: 8.0),
             DropdownButtonFormField<String>(
               value: widget.locations.any((selectedLocation) =>

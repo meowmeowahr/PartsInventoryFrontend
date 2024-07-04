@@ -172,7 +172,7 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   List<dynamic> filterLocations(List<dynamic> locations, String searchEntry) {
-    final query = searchEntry.toLowerCase();
+    final query = searchEntry.toLowerCase().trim();
 
     return locations.where((location) {
       final name = (location['name'] as String).toLowerCase();
@@ -183,7 +183,7 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   List<dynamic> filterSorters(List<dynamic> sorters, String searchEntry) {
-    final query = searchEntry.toLowerCase();
+    final query = searchEntry.toLowerCase().trim();
 
     return sorters.where((sorter) {
       final name = (sorter['name'] as String).toLowerCase();

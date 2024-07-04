@@ -684,22 +684,23 @@ class MyHomePageState extends State<MyHomePage> {
                 child: FloatingActionButton(
                   onPressed: () {
                     Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CreateSorterPage(
-                            locations: _locations,
-                            onCreated: () {
-                              setState(() {
-                                _fetchSorters();
-                              });
-                            },
-                          ),
-                        ));
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CreateSorterPage(
+                          locations: _locations,
+                          onCreated: () {
+                            setState(() {
+                              _fetchSorters();
+                            });
+                          },
+                        ),
+                      ),
+                    );
                   },
                   child: const Icon(Icons.add),
                 ),
               ),
-            )
+            ),
           ],
         );
       default:
@@ -1471,7 +1472,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
               Icons.delete_forever,
               color: Colors.red,
             ),
-          )
+          ),
         ],
       ),
       body: Padding(

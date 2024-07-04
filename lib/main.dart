@@ -391,12 +391,14 @@ class MyHomePageState extends State<MyHomePage> {
                                       filterLocations(
                                           _locations, locationsSearchQuery),
                                       locationsSortType)[index]['id'],
-                                  sorters: _sorters,
+                                  locations: _locations,
                                   onDelete: () {
                                     _fetchLocations();
+                                    _fetchSorters();
                                   },
                                   onModify: () {
                                     _fetchLocations();
+                                    _fetchSorters();
                                   },
                                 ),
                               ),
@@ -595,9 +597,11 @@ class MyHomePageState extends State<MyHomePage> {
                                   locations: _locations,
                                   onDelete: () {
                                     _fetchSorters();
+                                    _fetchLocations();
                                   },
                                   onModify: () {
                                     _fetchSorters();
+                                    _fetchLocations();
                                   },
                                 ),
                               ),
@@ -1776,7 +1780,7 @@ class ModifySorterPageState extends State<ModifySorterPage> {
 
 class LocationInfoPage extends StatefulWidget {
   final String locationId;
-  final List<dynamic> sorters;
+  final List<dynamic> locations;
 
   final Function onDelete;
   final Function onModify;
@@ -1784,9 +1788,9 @@ class LocationInfoPage extends StatefulWidget {
   const LocationInfoPage({
     super.key,
     required this.locationId,
-    required this.sorters,
     required this.onDelete,
     required this.onModify,
+    required this.locations,
   });
 
   @override
@@ -1801,10 +1805,15 @@ class LocationInfoPageState extends State<LocationInfoPage> {
   String? locationId;
   List<String>? locationTags;
 
+  List<dynamic> _sorters = [];
+  String sorterSearchQuery = "";
+  String sortersSortType = "creationTimeDesc";
+
   @override
   void initState() {
     super.initState();
     _locationInfo = _fetchLocationInfo();
+    _fetchSorters();
   }
 
   Future<Map<String, dynamic>> _fetchLocationInfo() async {
@@ -1935,7 +1944,7 @@ class LocationInfoPageState extends State<LocationInfoPage> {
     return Column(
       children: [
         Icon(
-          Icons.inventory_2_rounded,
+          Icons.room_rounded,
           size: 240,
           color: Theme.of(context).colorScheme.primary,
         ),
@@ -1991,8 +2000,202 @@ class LocationInfoPageState extends State<LocationInfoPage> {
     );
   }
 
-  Widget _buildPartsPane() {
-    return const Placeholder();
+  Future<void> _fetchSorters() async {
+    final url = Uri.parse(
+        'http://localhost:8000/sorters'); // Replace with your API endpoint
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final List<dynamic> sortersJson = jsonDecode(response.body);
+        setState(() {
+          _sorters = sortersJson;
+        });
+      } else {
+        throw Exception('Failed to load sorters');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            children: [
+              const Text(
+                'Sorter fetch failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                e.toString(),
+              ),
+            ],
+          ),
+        ),
+      );
+      _sorters = [];
+      // Handle error as needed
+    }
+  }
+
+  List<dynamic> filterSorters(List<dynamic> sorters, String searchEntry) {
+    final query = searchEntry.toLowerCase().trim();
+
+    return sorters.where((sorter) {
+      final name = (sorter['name'] as String).toLowerCase();
+      final tags = (sorter['tags'] as String).toLowerCase().split(',');
+
+      return name.contains(query) || tags.any((tag) => tag.contains(query));
+    }).toList();
+  }
+
+  List _sortSorters(List sorters, String sorter) {
+    List sortedSorters = List.from(sorters);
+    switch (sorter) {
+      case 'creationTimeDesc':
+        // Already in descending order
+        break;
+      case 'creationTimeAsc':
+        sortedSorters = sortedSorters.reversed.toList();
+        break;
+      case 'nameAsc':
+        sortedSorters.sort((a, b) =>
+            a['name'].toLowerCase().compareTo(b['name'].toLowerCase()));
+        break;
+      case 'nameDesc':
+        sortedSorters.sort((a, b) =>
+            b['name'].toLowerCase().compareTo(a['name'].toLowerCase()));
+        break;
+      default:
+        // Handle invalid sorter case if needed
+        break;
+    }
+    return sortedSorters;
+  }
+
+  List<dynamic> filterSortersByLocationId(
+      String locationId, List<dynamic> sorters) {
+    return sorters.where((sorter) => sorter['location'] == locationId).toList();
+  }
+
+  Widget _buildSortersPane() {
+    return Expanded(
+      child: ListView.builder(
+        itemCount: filterSorters(
+                filterSortersByLocationId(locationId!, _sorters),
+                sorterSearchQuery)
+            .length,
+        shrinkWrap: true,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SorterInfoPage(
+                      sorterId: _sortSorters(
+                          filterSorters(
+                              filterSortersByLocationId(locationId!, _sorters),
+                              sorterSearchQuery),
+                          sortersSortType)[index]['id'],
+                      locations: widget.locations,
+                      onDelete: () {
+                        _fetchSorters();
+                        Navigator.of(context).pop();
+                        widget.onModify();
+                      },
+                      onModify: () {
+                        _fetchSorters();
+                        Navigator.of(context).pop();
+                        widget.onModify();
+                      },
+                    ),
+                  ),
+                );
+              },
+              style: ButtonStyle(
+                shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    const Icon(
+                      // String2Icon.getIconDataFromString(
+                      //     _sorters[index]['icon']),
+                      Icons.inventory_2,
+                      size: 64,
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            _sortSorters(
+                                filterSorters(
+                                    filterSortersByLocationId(
+                                        locationId!, _sorters),
+                                    sorterSearchQuery),
+                                sortersSortType)[index]['name'],
+                            style: const TextStyle(
+                              fontSize: 18,
+                            ),
+                          ),
+                          Text(
+                            _sortSorters(
+                                filterSorters(
+                                    filterSortersByLocationId(
+                                        locationId!, _sorters),
+                                    sorterSearchQuery),
+                                sortersSortType)[index]['id'],
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(
+                            height: 4.0,
+                          ),
+                          Wrap(
+                            direction: Axis.horizontal,
+                            spacing: 4.0, // Space between adjacent widgets
+                            runSpacing: 4.0, // Space between lines of widgets
+                            children: [
+                              for (var tag in _sortSorters(
+                                      filterSorters(
+                                          filterSortersByLocationId(
+                                              locationId!, _sorters),
+                                          sorterSearchQuery),
+                                      sortersSortType)[index]['tags']
+                                  .split(','))
+                                Chip(
+                                  label: Text(
+                                    tag,
+                                    style: const TextStyle(fontSize: 11),
+                                  ),
+                                  materialTapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  labelPadding: EdgeInsets.zero,
+                                  visualDensity: const VisualDensity(
+                                      horizontal: 0.0, vertical: -4),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -2061,21 +2264,19 @@ class LocationInfoPageState extends State<LocationInfoPage> {
                           child: _buildInfoPane(),
                         ),
                         Expanded(
-                          child: ListView(
-                            children: [_buildPartsPane()],
-                          ),
+                          child: _buildSortersPane(),
                         ),
                       ],
                     );
                   } else {
                     // One-column layout for smaller screens
-                    return ListView(
+                    return Column(
                       children: [
                         _buildInfoPane(),
                         const SizedBox(
                           height: 8.0,
                         ),
-                        _buildPartsPane()
+                        _buildSortersPane()
                       ],
                     );
                   }

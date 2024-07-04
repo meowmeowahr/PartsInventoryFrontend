@@ -1726,8 +1726,7 @@ class ModifySorterPageState extends State<ModifySorterPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        child: ListView(
           children: [
             ValueListenableBuilder(
                 // Note: pass _controller to the animation argument
@@ -2480,8 +2479,7 @@ class ModifyLocationPageState extends State<ModifyLocationPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        child: ListView(
           children: [
             ValueListenableBuilder(
                 valueListenable: _locationNameController,

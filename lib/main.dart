@@ -296,16 +296,27 @@ class MyHomePageState extends State<MyHomePage> {
     // Simulate content based on selected index
     switch (_selectedIndex) {
       case 0:
-        return const SingleChildScrollView(
+        return SingleChildScrollView(
           child: Column(
             children: [
-              Icon(
+              const Icon(
                 Icons.home_filled,
                 size: 240,
               ),
               Text(
-                "Total Items in Inventory: XXX",
-                style: TextStyle(fontSize: 24),
+                "Locations in Inventory: ${_locations.length}",
+                style: TextStyle(
+                    fontSize: 24, color: Theme.of(context).colorScheme.primary),
+              ),
+              Text(
+                "Sorters in Inventory: ${_sorters.length}",
+                style: TextStyle(
+                    fontSize: 24, color: Theme.of(context).colorScheme.primary),
+              ),
+              Text(
+                "Items in Inventory: XXX",
+                style: TextStyle(
+                    fontSize: 26, color: Theme.of(context).colorScheme.primary),
               ),
             ],
           ),

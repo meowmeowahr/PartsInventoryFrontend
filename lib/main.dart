@@ -288,6 +288,11 @@ class MyHomePageState extends State<MyHomePage> {
           selectedIcon: Icon(Icons.inventory),
           label: Text('Sorters'),
         ),
+        NavigationRailDestination(
+          icon: Icon(Icons.category_outlined),
+          selectedIcon: Icon(Icons.category),
+          label: Text('Parts'),
+        ),
       ],
     );
   }

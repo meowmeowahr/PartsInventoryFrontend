@@ -1716,8 +1716,8 @@ class ModifySorterPageState extends State<ModifySorterPage> {
                 }),
             const SizedBox(height: 8.0),
             DropdownButtonFormField<String>(
-              value: widget.locations.any((selectedLocation) =>
-                      selectedLocation['id'] == selectedLocation)
+              value: widget.locations
+                      .any((location) => location['id'] == selectedLocation)
                   ? selectedLocation
                   : null,
               onChanged: (value) {

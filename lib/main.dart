@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
@@ -1154,6 +1155,9 @@ class SorterInfoPageState extends State<SorterInfoPage> {
   String _pageTitle = "Sorter Information";
   String? sorterName;
   String? sorterId;
+  String? sorterLocation;
+  String? sorterLocationName;
+  List<String>? sorterTags;
 
   @override
   void initState() {
@@ -1171,7 +1175,10 @@ class SorterInfoPageState extends State<SorterInfoPage> {
         _pageTitle = data["name"];
         sorterName = data["name"];
         sorterId = data["id"];
+        sorterLocation = data["location"];
+        sorterTags = data["tags"].split(",");
       });
+      sorterLocationName = await getLocationName(context, sorterLocation!);
       return data;
     } else {
       throw Exception('Failed to load sorter information');
@@ -1213,7 +1220,43 @@ class SorterInfoPageState extends State<SorterInfoPage> {
           ),
         ),
       );
-      // Handle error as needed
+    }
+  }
+
+  Future<String?> getLocationName(
+      BuildContext context, String locationId) async {
+    final url = Uri.parse(
+        'http://localhost:8000/locations/$locationId'); // Replace with your API endpoint
+
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final locationData = jsonDecode(response.body);
+        return locationData[
+            'name']; // Assuming the response contains a 'name' field
+      } else {
+        throw Exception('Failed to load location');
+      }
+    } catch (e) {
+      if (!context.mounted) return null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Failed to load location!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                e.toString(),
+              ),
+            ],
+          ),
+        ),
+      );
+      return null;
     }
   }
 
@@ -1255,9 +1298,19 @@ class SorterInfoPageState extends State<SorterInfoPage> {
           size: 240,
           color: Theme.of(context).colorScheme.primary,
         ),
+        Text(
+          "Located in: $sorterLocationName",
+          style: const TextStyle(fontSize: 24),
+        ),
         Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text("ID: $sorterId"),
+            Flexible(
+              child: Text(
+                "ID: $sorterId",
+                softWrap: true,
+              ),
+            ),
             const SizedBox(width: 4.0),
             IconButton(
                 onPressed: () async {
@@ -1270,7 +1323,33 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                 },
                 icon: const Icon(Icons.copy, size: 18))
           ],
-        )
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text("Tags:"),
+            const SizedBox(width: 4.0),
+            Flexible(
+              child: Wrap(
+                spacing: 4.0,
+                runSpacing: 4.0,
+                children: [
+                  for (var tag in sorterTags ?? [])
+                    Chip(
+                      label: Text(
+                        tag,
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      labelPadding: EdgeInsets.zero,
+                      visualDensity:
+                          const VisualDensity(horizontal: 0.0, vertical: -4),
+                    )
+                ],
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -1285,6 +1364,35 @@ class SorterInfoPageState extends State<SorterInfoPage> {
       appBar: AppBar(
         title: Text(_pageTitle),
         actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => FutureBuilder<Map<String, dynamic>>(
+                    future: _sorterInfo,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      } else if (snapshot.hasData) {
+                        return ModifySorterPage(
+                            sorter: snapshot.data!,
+                            locations: widget.locations,
+                            onModified: () {
+                              Navigator.of(context).pop();
+                            });
+                      } else {
+                        return Text('Error: ${snapshot.error}');
+                      }
+                    },
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(
+              Icons.edit,
+            ),
+          ),
           IconButton(
             onPressed: () {
               _showDeleteConfirmation(context);
@@ -1316,14 +1424,22 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                           child: _buildInfoPane(),
                         ),
                         Expanded(
-                          child: _buildPartsPane(),
+                          child: ListView(
+                            children: [_buildPartsPane()],
+                          ),
                         ),
                       ],
                     );
                   } else {
                     // One-column layout for smaller screens
-                    return Column(
-                      children: [_buildInfoPane(), _buildPartsPane()],
+                    return ListView(
+                      children: [
+                        _buildInfoPane(),
+                        const SizedBox(
+                          height: 8.0,
+                        ),
+                        _buildPartsPane()
+                      ],
                     );
                   }
                 },
@@ -1332,6 +1448,223 @@ class SorterInfoPageState extends State<SorterInfoPage> {
               return const Text('No data');
             }
           },
+        ),
+      ),
+    );
+  }
+}
+
+class ModifySorterPage extends StatefulWidget {
+  const ModifySorterPage({
+    super.key,
+    required this.sorter,
+    required this.locations,
+    required this.onModified,
+  });
+
+  final Map<String, dynamic> sorter;
+  final List<dynamic> locations;
+  final Function onModified;
+
+  @override
+  ModifySorterPageState createState() => ModifySorterPageState();
+}
+
+class ModifySorterPageState extends State<ModifySorterPage> {
+  late String sorterName;
+  late String uniqueId;
+  String? selectedLocation;
+  List<String> values = [];
+
+  void _onTagDetete(int index) {
+    setState(() {
+      values.removeAt(index);
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    sorterName = widget.sorter['name'];
+    uniqueId = widget.sorter['id'];
+    selectedLocation = widget.sorter['location'];
+    values = widget.sorter['tags'].split(',');
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  List<DropdownMenuItem<String>> buildLocationDropdownItems(
+      List<dynamic> locations) {
+    return locations.map<DropdownMenuItem<String>>((location) {
+      return DropdownMenuItem<String>(
+        value: location['id'].toString(),
+        child: Text(location['name'].toString()),
+      );
+    }).toList();
+  }
+
+  String? getUniqueIdValidationError() {
+    if (uniqueId.isEmpty) {
+      return "Value can't be empty";
+    }
+
+    RegExp regex = RegExp(r'[^\w-]');
+    if (regex.hasMatch(uniqueId)) {
+      return "Special characters are not allowed";
+    }
+    return null;
+  }
+
+  Future<void> _modifySorter() async {
+    final url = Uri.parse(
+        'http://localhost:8000/sorters/$uniqueId'); // Replace with your API endpoint
+    try {
+      final response = await http.put(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, dynamic>{
+          'name': sorterName,
+          'id': uniqueId,
+          'location': selectedLocation,
+          'icon': 'blank',
+          'tags': values.join(","),
+          'attrs': {}
+        }),
+      );
+      if (response.statusCode == 200) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sorter modified successfully!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        Navigator.of(context).pop();
+        widget.onModified();
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Sorter modification failed!',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(response.body),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Sorter modification failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(e.toString()),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Modify Sorter"),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            TextField(
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                labelText: 'Name for Sorter',
+                errorText: sorterName.isEmpty ? "Value can't be empty" : null,
+              ),
+              onChanged: (value) {
+                setState(() {
+                  sorterName = value;
+                });
+              },
+              controller: TextEditingController(text: sorterName),
+            ),
+            const SizedBox(height: 8.0),
+            DropdownButtonFormField<String>(
+              value: selectedLocation,
+              onChanged: (value) {
+                setState(() {
+                  selectedLocation = value;
+                });
+              },
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                labelText: 'Select Location',
+                errorText:
+                    selectedLocation == null ? "Value can't be empty" : null,
+              ),
+              items: buildLocationDropdownItems(widget.locations),
+            ),
+            const SizedBox(height: 8.0),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Theme.of(context).dividerColor),
+                borderRadius: BorderRadius.circular(4.0),
+              ),
+              padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+              child: TagEditor(
+                length: values.length,
+                delimiters: const [',', ' ', ';'],
+                hasAddButton: false,
+                inputDecoration: const InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'Add tags here...',
+                ),
+                onTagChanged: (newValue) {
+                  setState(() {
+                    values.add(newValue);
+                  });
+                },
+                tagBuilder: (context, index) => Padding(
+                  padding: const EdgeInsets.only(top: 7.0),
+                  child: Chip(
+                    label: Text(values[index]),
+                    onDeleted: () {
+                      _onTagDetete(index);
+                    },
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8.0),
+            ElevatedButton(
+              onPressed: () {
+                _modifySorter(); // Call function to modify sorter
+              },
+              child: const Text('Modify Sorter'),
+            ),
+          ],
         ),
       ),
     );

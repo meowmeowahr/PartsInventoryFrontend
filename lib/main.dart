@@ -300,7 +300,7 @@ class MyHomePageState extends State<MyHomePage> {
           child: Column(
             children: [
               const Icon(
-                Icons.home_filled,
+                Icons.home,
                 size: 240,
               ),
               Text(

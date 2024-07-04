@@ -455,36 +455,51 @@ class MyHomePageState extends State<MyHomePage> {
                                       const SizedBox(
                                         height: 4.0,
                                       ),
-                                      Wrap(
-                                        direction: Axis.horizontal,
-                                        spacing:
-                                            4.0, // Space between adjacent widgets
-                                        runSpacing:
-                                            4.0, // Space between lines of widgets
-                                        children: [
-                                          for (var tag in _sortLocations(
+                                      _sortLocations(
                                                       filterLocations(_locations,
                                                           locationsSearchQuery),
                                                       locationsSortType)[index]
-                                                  ['tags']
-                                              .split(','))
-                                            Chip(
-                                              label: Text(
-                                                tag,
-                                                style: const TextStyle(
-                                                    fontSize: 11),
-                                              ),
-                                              materialTapTargetSize:
-                                                  MaterialTapTargetSize
-                                                      .shrinkWrap,
-                                              labelPadding: EdgeInsets.zero,
-                                              visualDensity:
-                                                  const VisualDensity(
-                                                      horizontal: 0.0,
-                                                      vertical: -4),
-                                            ),
-                                        ],
-                                      ),
+                                                  ['tags'] !=
+                                              ""
+                                          ? Wrap(
+                                              direction: Axis.horizontal,
+                                              spacing:
+                                                  4.0, // Space between adjacent widgets
+                                              runSpacing:
+                                                  4.0, // Space between lines of widgets
+                                              children: [
+                                                for (var tag in _sortLocations(
+                                                            filterLocations(
+                                                                _locations,
+                                                                locationsSearchQuery),
+                                                            locationsSortType)[
+                                                        index]['tags']
+                                                    .split(','))
+                                                  Chip(
+                                                    label: Text(
+                                                      tag,
+                                                      style: const TextStyle(
+                                                          fontSize: 11),
+                                                    ),
+                                                    materialTapTargetSize:
+                                                        MaterialTapTargetSize
+                                                            .shrinkWrap,
+                                                    labelPadding:
+                                                        EdgeInsets.zero,
+                                                    visualDensity:
+                                                        const VisualDensity(
+                                                            horizontal: 0.0,
+                                                            vertical: -4),
+                                                  ),
+                                              ],
+                                            )
+                                          : Text(
+                                              "No Tags",
+                                              style: TextStyle(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onBackground),
+                                            )
                                     ],
                                   ),
                                 ),
@@ -1975,25 +1990,28 @@ class LocationInfoPageState extends State<LocationInfoPage> {
           children: [
             const Text("Tags:"),
             const SizedBox(width: 4.0),
-            Flexible(
-              child: Wrap(
-                spacing: 4.0,
-                runSpacing: 4.0,
-                children: [
-                  for (var tag in locationTags ?? [])
-                    Chip(
-                      label: Text(
-                        tag,
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      labelPadding: EdgeInsets.zero,
-                      visualDensity:
-                          const VisualDensity(horizontal: 0.0, vertical: -4),
-                    )
-                ],
-              ),
-            ),
+            locationTags?.firstOrNull != ""
+                ? Flexible(
+                    child: Wrap(
+                      spacing: 4.0,
+                      runSpacing: 4.0,
+                      children: [
+                        for (var tag in locationTags ?? [])
+                          Chip(
+                            label: Text(
+                              tag,
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            labelPadding: EdgeInsets.zero,
+                            visualDensity: const VisualDensity(
+                                horizontal: 0.0, vertical: -4),
+                          )
+                      ],
+                    ),
+                  )
+                : const Text("No Tags")
           ],
         ),
       ],

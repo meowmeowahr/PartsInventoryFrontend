@@ -1266,7 +1266,8 @@ class SorterInfoPageState extends State<SorterInfoPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Delete Sorter'),
-          content: const Text('Are you sure you want to delete this sorter?'),
+          content: const Text(
+              'Are you sure you want to delete this sorter? Parts will not be deleted, but be left as orphaned parts. To resolve that, delete them or create a new sorter with the same unique id is the one being deleted.'),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancel'),

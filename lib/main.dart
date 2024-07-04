@@ -227,6 +227,10 @@ class MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  int getSortersCountInLocation(String locationId, List<dynamic> sorters) {
+    return sorters.where((sorter) => sorter['location'] == locationId).length;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -388,6 +392,12 @@ class MyHomePageState extends State<MyHomePage> {
                                             locationsSortType)[index]['name'],
                                         style: const TextStyle(
                                           fontSize: 18,
+                                        ),
+                                      ),
+                                      Text(
+                                        "Contains ${getSortersCountInLocation(_sortLocations(filterLocations(_locations, locationsSearchQuery), locationsSortType)[index]['id'], _sorters)} sorters",
+                                        style: const TextStyle(
+                                          fontSize: 14,
                                         ),
                                       ),
                                       Text(

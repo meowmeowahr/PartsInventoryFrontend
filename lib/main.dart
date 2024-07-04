@@ -613,6 +613,7 @@ class MyHomePageState extends State<MyHomePage> {
                                           _sorters, sorterSearchQuery),
                                       sortersSortType)[index]['id'],
                                   locations: _locations,
+                                  sorters: _sorters,
                                   onDelete: () {
                                     _fetchSorters();
                                     _fetchLocations();
@@ -1262,6 +1263,7 @@ class CreateLocationPageState extends State<CreateLocationPage> {
 class SorterInfoPage extends StatefulWidget {
   final String sorterId;
   final List<dynamic> locations;
+  final List<dynamic> sorters;
 
   final Function onDelete;
   final Function onModify;
@@ -1270,6 +1272,7 @@ class SorterInfoPage extends StatefulWidget {
     super.key,
     required this.sorterId,
     required this.locations,
+    required this.sorters,
     required this.onDelete,
     required this.onModify,
   });
@@ -1288,6 +1291,9 @@ class SorterInfoPageState extends State<SorterInfoPage> {
   String? sorterLocation;
   String? sorterLocationName;
   List<String>? sorterTags;
+
+  String partsSearchQuery = "";
+  String partsSortType = "";
 
   @override
   void initState() {
@@ -1349,6 +1355,41 @@ class SorterInfoPageState extends State<SorterInfoPage> {
       );
       return [];
     }
+  }
+
+  List<dynamic> filterParts(List<dynamic> parts, String searchEntry) {
+    final query = searchEntry.toLowerCase().trim();
+
+    return parts.where((sorter) {
+      final name = (sorter['name'] as String).toLowerCase();
+      final tags = (sorter['tags'] as String).toLowerCase().split(',');
+
+      return name.contains(query) || tags.any((tag) => tag.contains(query));
+    }).toList();
+  }
+
+  List _sortParts(List parts, String sorter) {
+    List sortedParts = List.from(parts);
+    switch (sorter) {
+      case 'creationTimeDesc':
+        // Already in descending order
+        break;
+      case 'creationTimeAsc':
+        sortedParts = sortedParts.reversed.toList();
+        break;
+      case 'nameAsc':
+        sortedParts.sort((a, b) =>
+            a['name'].toLowerCase().compareTo(b['name'].toLowerCase()));
+        break;
+      case 'nameDesc':
+        sortedParts.sort((a, b) =>
+            b['name'].toLowerCase().compareTo(a['name'].toLowerCase()));
+        break;
+      default:
+        // Handle invalid sorter case if needed
+        break;
+    }
+    return sortedParts;
   }
 
   Future<void> deleteSorter(String sorterId) async {
@@ -1529,8 +1570,193 @@ class SorterInfoPageState extends State<SorterInfoPage> {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasData) {
-          return Placeholder();
+        } else if ((snapshot.hasData) && (snapshot.data != null)) {
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: SearchBar(
+                        onChanged: (value) {
+                          setState(() {
+                            partsSearchQuery = value;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 4.0,
+                    ),
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.sort),
+                      tooltip: "Sort",
+                      onSelected: (String value) {
+                        setState(() {
+                          partsSortType = value;
+                        });
+                      },
+                      itemBuilder: (BuildContext context) =>
+                          <PopupMenuEntry<String>>[
+                        const PopupMenuItem<String>(
+                          value: 'creationTimeDesc',
+                          child: Text('Creation Time Descending'),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: 'creationTimeAsc',
+                          child: Text('Creation Time Ascending'),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: 'nameAsc',
+                          child: Text('Name Ascending'),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: 'nameDesc',
+                          child: Text('Name Descending'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(
+                      width: 4.0,
+                    ),
+                  ],
+                ),
+              ),
+              ListView.builder(
+                itemCount: filterParts(snapshot.data!, partsSearchQuery).length,
+                shrinkWrap: true,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PartInfoPage(
+                              partId: _sortParts(
+                                  filterParts(snapshot.data!, partsSearchQuery),
+                                  partsSortType)[index]['id'],
+                              locations: widget.locations,
+                              sorters: widget.sorters,
+                              onDelete: () {
+                                _fetchParts(sorterId!);
+                                Navigator.of(context).pop();
+                                widget.onModify();
+                              },
+                              onModify: () {
+                                _fetchParts(sorterId!);
+                                Navigator.of(context).pop();
+                                widget.onModify();
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                      style: ButtonStyle(
+                        shape:
+                            MaterialStateProperty.all<RoundedRectangleBorder>(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.0),
+                          ),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              // String2Icon.getIconDataFromString(
+                              //     _sorters[index]['icon']),
+                              Icons.category_rounded,
+                              size: 64,
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    _sortParts(
+                                        filterParts(
+                                            snapshot.data!, partsSearchQuery),
+                                        partsSortType)[index]['name'],
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                  Text(
+                                    "Quantity: ${_sortParts(filterParts(snapshot.data!, partsSearchQuery), partsSortType)[index]['enable_quantity'] ? _sortParts(filterParts(snapshot.data!, partsSearchQuery), partsSortType)[index]['quantity'].toString() : 'Disabled'}",
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  Text(
+                                    _sortParts(
+                                        filterParts(
+                                            snapshot.data!, partsSearchQuery),
+                                        partsSortType)[index]['id'],
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  const SizedBox(
+                                    height: 4.0,
+                                  ),
+                                  _sortParts(
+                                              filterParts(snapshot.data!,
+                                                  partsSearchQuery),
+                                              partsSortType)[index]['tags'] !=
+                                          ""
+                                      ? Wrap(
+                                          direction: Axis.horizontal,
+                                          spacing:
+                                              4.0, // Space between adjacent widgets
+                                          runSpacing:
+                                              4.0, // Space between lines of widgets
+                                          children: [
+                                            for (var tag in _sortParts(
+                                                        filterParts(
+                                                            snapshot.data!,
+                                                            partsSearchQuery),
+                                                        partsSortType)[index]
+                                                    ['tags']
+                                                .split(','))
+                                              Chip(
+                                                label: Text(
+                                                  tag,
+                                                  style: const TextStyle(
+                                                      fontSize: 11),
+                                                ),
+                                                materialTapTargetSize:
+                                                    MaterialTapTargetSize
+                                                        .shrinkWrap,
+                                                labelPadding: EdgeInsets.zero,
+                                                visualDensity:
+                                                    const VisualDensity(
+                                                        horizontal: 0.0,
+                                                        vertical: -4),
+                                              ),
+                                          ],
+                                        )
+                                      : Text("No Tags",
+                                          style: TextStyle(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onBackground))
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          );
         } else {
           return Text('Error: ${snapshot.error}');
         }
@@ -1672,11 +1898,6 @@ class ModifySorterPageState extends State<ModifySorterPage> {
     values = widget.sorter['tags'].split(',');
 
     _sorterNameController = TextEditingController(text: widget.sorter['name']);
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   List<DropdownMenuItem<String>> buildLocationDropdownItems(
@@ -2235,6 +2456,7 @@ class LocationInfoPageState extends State<LocationInfoPage> {
                                   sorterSearchQuery),
                               sortersSortType)[index]['id'],
                           locations: widget.locations,
+                          sorters: _sorters,
                           onDelete: () {
                             _fetchSorters();
                             Navigator.of(context).pop();
@@ -2642,6 +2864,444 @@ class ModifyLocationPageState extends State<ModifyLocationPage> {
               child: const Text('Modify Location'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class PartInfoPage extends StatefulWidget {
+  final String partId;
+  final List<dynamic> locations;
+  final List<dynamic> sorters;
+
+  final Function onDelete;
+  final Function onModify;
+
+  const PartInfoPage({
+    super.key,
+    required this.partId,
+    required this.locations,
+    required this.sorters,
+    required this.onDelete,
+    required this.onModify,
+  });
+
+  @override
+  PartInfoPageState createState() => PartInfoPageState();
+}
+
+class PartInfoPageState extends State<PartInfoPage> {
+  late Future<Map<String, dynamic>> _partInfo;
+
+  String _pageTitle = "Part Information";
+  String? partName;
+  String? partLocationName;
+  String? partSorterId;
+  Map<String, dynamic>? partLocation;
+  String? partSorterName;
+  List<String>? partTags;
+
+  @override
+  void initState() {
+    super.initState();
+    _partInfo = _fetchPartInfo();
+  }
+
+  Future<Map<String, dynamic>> _fetchPartInfo() async {
+    final url =
+        Uri.parse('http://localhost:8000/parts_individual/${widget.partId}');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      setState(() {
+        _pageTitle = data["name"];
+        partName = data["name"];
+        partSorterId = data["sorter"];
+        partSorterName = getSorterName(data["sorter"], widget.sorters);
+        partLocation = getLocationBySorterId(
+            widget.sorters, widget.locations, data["sorter"]);
+        partLocationName = partLocation?["name"];
+        partTags = data["tags"].split(",");
+      });
+      return data;
+    } else {
+      throw Exception('Failed to load part information');
+    }
+  }
+
+  Future<List> _fetchParts(String sorter) async {
+    final url = Uri.parse(
+        'http://localhost:8000/parts/$sorter'); // Replace with your API endpoint
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final List<dynamic> partsJson = jsonDecode(response.body);
+        return partsJson;
+      } else {
+        throw Exception('Failed to load parts');
+      }
+    } catch (e) {
+      if (!mounted) return [];
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            children: [
+              const Text(
+                'Parts fetch failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                e.toString(),
+              ),
+            ],
+          ),
+        ),
+      );
+      return [];
+    }
+  }
+
+  List<dynamic> filterParts(List<dynamic> parts, String searchEntry) {
+    final query = searchEntry.toLowerCase().trim();
+
+    return parts.where((sorter) {
+      final name = (sorter['name'] as String).toLowerCase();
+      final tags = (sorter['tags'] as String).toLowerCase().split(',');
+
+      return name.contains(query) || tags.any((tag) => tag.contains(query));
+    }).toList();
+  }
+
+  List _sortParts(List parts, String sorter) {
+    List sortedParts = List.from(parts);
+    switch (sorter) {
+      case 'creationTimeDesc':
+        // Already in descending order
+        break;
+      case 'creationTimeAsc':
+        sortedParts = sortedParts.reversed.toList();
+        break;
+      case 'nameAsc':
+        sortedParts.sort((a, b) =>
+            a['name'].toLowerCase().compareTo(b['name'].toLowerCase()));
+        break;
+      case 'nameDesc':
+        sortedParts.sort((a, b) =>
+            b['name'].toLowerCase().compareTo(a['name'].toLowerCase()));
+        break;
+      default:
+        // Handle invalid sorter case if needed
+        break;
+    }
+    return sortedParts;
+  }
+
+  String? getSorterName(String sorterId, List<dynamic> sorters) {
+    try {
+      final sorter = sorters.firstWhere(
+        (location) => location['id'].toString() == sorterId,
+        orElse: () => null,
+      );
+      if (sorter != null) {
+        return sorter['name']
+            .toString(); // Assuming the location contains a 'name' field
+      } else {
+        throw Exception('Sorter not found');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Failed to load sorter!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                e.toString(),
+              ),
+            ],
+          ),
+        ),
+      );
+      return null;
+    }
+  }
+
+  String? getLocationName(String locationId, List<dynamic> locations) {
+    try {
+      final location = locations.firstWhere(
+        (location) => location['id'].toString() == locationId,
+        orElse: () => null,
+      );
+      if (location != null) {
+        return location['name']
+            .toString(); // Assuming the location contains a 'name' field
+      } else {
+        throw Exception('Location not found');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Failed to load location!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                e.toString(),
+              ),
+            ],
+          ),
+        ),
+      );
+      return null;
+    }
+  }
+
+  Map<String, dynamic>? getLocationBySorterId(
+      List<dynamic> sorters, List<dynamic> locations, String sorterId) {
+    Map<String, dynamic> sorter = sorters
+        .firstWhere((sorter) => sorter['id'] == sorterId, orElse: () => {});
+
+    if (sorter.isNotEmpty) {
+      String locationId = sorter['location'];
+      return locations.firstWhere((location) => location['id'] == locationId,
+          orElse: () => {});
+    } else {
+      return null;
+    }
+  }
+
+  Future<void> deletePart(String partId) async {
+    final url = Uri.parse(
+        'http://localhost:8000/parts_individual/$partId'); // Replace with your API endpoint
+
+    try {
+      final response = await http.delete(url);
+      if (response.statusCode == 200) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sorter deleted successfully!'),
+          ),
+        );
+        widget.onDelete();
+        Navigator.of(context).pop();
+      } else {
+        throw Exception('Failed to delete sorter');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            children: [
+              const Text(
+                'Sorter delete failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                e.toString(),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<Object> _showDeleteConfirmation(BuildContext context) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Sorter'),
+          content: const Text(
+              'Are you sure you want to delete this sorter? Parts will not be deleted, but be left as orphaned parts. To resolve that, delete them or create a new sorter with the same unique id is the one being deleted.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+            ),
+            TextButton(
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.red),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+                deletePart(widget.partId);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildInfoPane() {
+    return Column(
+      children: [
+        Icon(
+          Icons.category_rounded,
+          size: 240,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        Text(
+          "Located in: $partLocationName > $partSorterName",
+          style: const TextStyle(fontSize: 24),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Flexible(
+              child: Text(
+                "ID: ${widget.partId}",
+                softWrap: true,
+              ),
+            ),
+            const SizedBox(width: 4.0),
+            IconButton(
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: widget.partId))
+                      .then((_) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(const SnackBar(content: Text('Copied!')));
+                  });
+                  // copied successfully
+                },
+                icon: const Icon(Icons.copy, size: 18))
+          ],
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text("Tags:"),
+            const SizedBox(width: 4.0),
+            partTags?.firstOrNull != ""
+                ? Flexible(
+                    child: Wrap(
+                      spacing: 4.0,
+                      runSpacing: 4.0,
+                      children: [
+                        for (var tag in partTags ?? [])
+                          Chip(
+                            label: Text(
+                              tag,
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            labelPadding: EdgeInsets.zero,
+                            visualDensity: const VisualDensity(
+                                horizontal: 0.0, vertical: -4),
+                          )
+                      ],
+                    ),
+                  )
+                : const Text("No Tags")
+          ],
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_pageTitle),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => FutureBuilder<Map<String, dynamic>>(
+                    future: _partInfo,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      } else if (snapshot.hasData) {
+                        return ModifySorterPage(
+                            sorter: snapshot.data!,
+                            locations: widget.locations,
+                            onModified: () {
+                              widget.onModify();
+                              Navigator.of(context).pop();
+                            });
+                      } else {
+                        return Text('Error: ${snapshot.error}');
+                      }
+                    },
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(
+              Icons.edit,
+            ),
+          ),
+          IconButton(
+            onPressed: () {
+              _showDeleteConfirmation(context);
+            },
+            icon: const Icon(
+              Icons.delete_forever,
+              color: Colors.red,
+            ),
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: FutureBuilder<Map<String, dynamic>>(
+          future: _partInfo,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Text('Error: ${snapshot.error}');
+            } else if (snapshot.hasData) {
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth > 600) {
+                    // Two-column layout for larger screens
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: _buildInfoPane(),
+                        ),
+                      ],
+                    );
+                  } else {
+                    // One-column layout for smaller screens
+                    return ListView(
+                      children: [
+                        _buildInfoPane(),
+                      ],
+                    );
+                  }
+                },
+              );
+            } else {
+              return const Text('No data');
+            }
+          },
         ),
       ),
     );

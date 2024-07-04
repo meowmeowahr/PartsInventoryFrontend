@@ -48,10 +48,14 @@ class MyHomePageState extends State<MyHomePage> {
   String locationsSortType = "creationTimeDesc";
   String locationsSearchQuery = "";
 
+  String partsSortType = "creationTimeDesc";
+  String partsSearchQuery = "";
+
   @override
   void initState() {
     super.initState();
     _fetchLocations();
+    _fetchSorters();
   }
 
   Future<void> _fetchLocations() async {
@@ -287,11 +291,6 @@ class MyHomePageState extends State<MyHomePage> {
           icon: Icon(Icons.inventory_2_outlined),
           selectedIcon: Icon(Icons.inventory),
           label: Text('Sorters'),
-        ),
-        NavigationRailDestination(
-          icon: Icon(Icons.category_outlined),
-          selectedIcon: Icon(Icons.category),
-          label: Text('Parts'),
         ),
       ],
     );
@@ -543,7 +542,6 @@ class MyHomePageState extends State<MyHomePage> {
             )
           ],
         );
-
       case 2:
         return Stack(
           children: [
@@ -1282,6 +1280,7 @@ class SorterInfoPage extends StatefulWidget {
 
 class SorterInfoPageState extends State<SorterInfoPage> {
   late Future<Map<String, dynamic>> _sorterInfo;
+  late Future<List<dynamic>> parts;
 
   String _pageTitle = "Sorter Information";
   String? sorterName;
@@ -1293,7 +1292,10 @@ class SorterInfoPageState extends State<SorterInfoPage> {
   @override
   void initState() {
     super.initState();
-    _sorterInfo = _fetchSorterInfo();
+    _sorterInfo = _fetchSorterInfo().then((value) {
+      parts = _fetchParts(value['id']);
+      return value;
+    });
   }
 
   Future<Map<String, dynamic>> _fetchSorterInfo() async {
@@ -1313,6 +1315,39 @@ class SorterInfoPageState extends State<SorterInfoPage> {
       return data;
     } else {
       throw Exception('Failed to load sorter information');
+    }
+  }
+
+  Future<List> _fetchParts(String sorter) async {
+    final url = Uri.parse(
+        'http://localhost:8000/parts/$sorter'); // Replace with your API endpoint
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final List<dynamic> partsJson = jsonDecode(response.body);
+        return partsJson;
+      } else {
+        throw Exception('Failed to load parts');
+      }
+    } catch (e) {
+      if (!mounted) return [];
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            children: [
+              const Text(
+                'Parts fetch failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                e.toString(),
+              ),
+            ],
+          ),
+        ),
+      );
+      return [];
     }
   }
 
@@ -1489,7 +1524,18 @@ class SorterInfoPageState extends State<SorterInfoPage> {
   }
 
   Widget _buildPartsPane() {
-    return const Placeholder();
+    return FutureBuilder<List<dynamic>>(
+      future: parts,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasData) {
+          return Placeholder();
+        } else {
+          return Text('Error: ${snapshot.error}');
+        }
+      },
+    );
   }
 
   @override

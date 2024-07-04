@@ -71,6 +71,7 @@ class MyHomePageState extends State<MyHomePage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
           content: Column(
             children: [
               const Text(
@@ -106,6 +107,7 @@ class MyHomePageState extends State<MyHomePage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
           content: Column(
             children: [
               const Text(
@@ -211,6 +213,7 @@ class MyHomePageState extends State<MyHomePage> {
         (timeStamp) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
+              backgroundColor: Theme.of(context).colorScheme.error,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -379,6 +382,9 @@ class MyHomePageState extends State<MyHomePage> {
                                       locationsSortType)[index]['id'],
                                   sorters: _sorters,
                                   onDelete: () {
+                                    _fetchLocations();
+                                  },
+                                  onModify: () {
                                     _fetchLocations();
                                   },
                                 ),
@@ -577,6 +583,9 @@ class MyHomePageState extends State<MyHomePage> {
                                       sortersSortType)[index]['id'],
                                   locations: _locations,
                                   onDelete: () {
+                                    _fetchSorters();
+                                  },
+                                  onModify: () {
                                     _fetchSorters();
                                   },
                                 ),
@@ -1210,12 +1219,14 @@ class SorterInfoPage extends StatefulWidget {
   final List<dynamic> locations;
 
   final Function onDelete;
+  final Function onModify;
 
   const SorterInfoPage({
     super.key,
     required this.sorterId,
     required this.locations,
     required this.onDelete,
+    required this.onModify,
   });
 
   @override
@@ -1280,6 +1291,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
           content: Column(
             children: [
               const Text(
@@ -1311,6 +1323,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1450,6 +1463,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                             sorter: snapshot.data!,
                             locations: widget.locations,
                             onModified: () {
+                              widget.onModify();
                               Navigator.of(context).pop();
                             });
                       } else {
@@ -1675,15 +1689,16 @@ class ModifySorterPageState extends State<ModifySorterPage> {
                 errorText: sorterName.isEmpty ? "Value can't be empty" : null,
               ),
               onChanged: (value) {
-                setState(() {
-                  sorterName = value;
-                });
+                sorterName = value;
               },
               controller: TextEditingController(text: sorterName),
             ),
             const SizedBox(height: 8.0),
             DropdownButtonFormField<String>(
-              value: selectedLocation,
+              value: widget.locations.any((selectedLocation) =>
+                      selectedLocation['id'] == selectedLocation)
+                  ? selectedLocation
+                  : null,
               onChanged: (value) {
                 setState(() {
                   selectedLocation = value;
@@ -1747,12 +1762,14 @@ class LocationInfoPage extends StatefulWidget {
   final List<dynamic> sorters;
 
   final Function onDelete;
+  final Function onModify;
 
   const LocationInfoPage({
     super.key,
     required this.locationId,
     required this.sorters,
     required this.onDelete,
+    required this.onModify,
   });
 
   @override
@@ -1814,6 +1831,7 @@ class LocationInfoPageState extends State<LocationInfoPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
           content: Column(
             children: [
               const Text(
@@ -1845,6 +1863,7 @@ class LocationInfoPageState extends State<LocationInfoPage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1870,7 +1889,8 @@ class LocationInfoPageState extends State<LocationInfoPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Delete Location'),
-          content: const Text('Are you sure you want to delete this location?'),
+          content: const Text(
+              'Are you sure you want to delete this location? Deleting a location that is in use will create errors when viewing all sorters. This will not prevent you from browsing or changing the location of sorters, however advanced filtering may not work.'),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancel'),
@@ -1975,12 +1995,12 @@ class LocationInfoPageState extends State<LocationInfoPage> {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
                       } else if (snapshot.hasData) {
-                        return Placeholder(); // ModifyLocationPage(
-                        //     location: snapshot.data!,
-                        //     locations: widget.locations,
-                        //     onModified: () {
-                        //       Navigator.of(context).pop();
-                        //     });
+                        return ModifyLocationPage(
+                            location: snapshot.data!,
+                            onModified: () {
+                              widget.onModify();
+                              Navigator.of(context).pop();
+                            });
                       } else {
                         return Text('Error: ${snapshot.error}');
                       }
@@ -2048,6 +2068,209 @@ class LocationInfoPageState extends State<LocationInfoPage> {
               return const Text('No data');
             }
           },
+        ),
+      ),
+    );
+  }
+}
+
+class ModifyLocationPage extends StatefulWidget {
+  const ModifyLocationPage({
+    super.key,
+    required this.location,
+    required this.onModified,
+  });
+
+  final Map<String, dynamic> location;
+  final Function onModified;
+
+  @override
+  ModifyLocationPageState createState() => ModifyLocationPageState();
+}
+
+class ModifyLocationPageState extends State<ModifyLocationPage> {
+  late String uniqueId;
+  String? selectedLocation;
+  List<String> values = [];
+
+  late TextEditingController _locationNameController;
+
+  void _onTagDetete(int index) {
+    setState(() {
+      values.removeAt(index);
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    uniqueId = widget.location['id'];
+    selectedLocation = widget.location['location'];
+    values = widget.location['tags'].split(',');
+
+    _locationNameController =
+        TextEditingController(text: widget.location['name']);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  List<DropdownMenuItem<String>> buildLocationDropdownItems(
+      List<dynamic> locations) {
+    return locations.map<DropdownMenuItem<String>>((location) {
+      return DropdownMenuItem<String>(
+        value: location['id'].toString(),
+        child: Text(location['name'].toString()),
+      );
+    }).toList();
+  }
+
+  String? getUniqueIdValidationError() {
+    if (uniqueId.isEmpty) {
+      return "Value can't be empty";
+    }
+
+    RegExp regex = RegExp(r'[^\w-]');
+    if (regex.hasMatch(uniqueId)) {
+      return "Special characters are not allowed";
+    }
+    return null;
+  }
+
+  Future<void> _modifyLocation() async {
+    final url = Uri.parse(
+        'http://localhost:8000/locations/$uniqueId'); // Replace with your API endpoint
+    try {
+      final response = await http.put(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, dynamic>{
+          'name': _locationNameController.text,
+          'id': uniqueId,
+          'location': selectedLocation,
+          'icon': 'blank',
+          'tags': values.join(","),
+          'attrs': {}
+        }),
+      );
+      if (response.statusCode == 200) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Location modified successfully!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        Navigator.of(context).pop();
+        widget.onModified();
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Location modification failed!',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(response.body),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Location modification failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(e.toString()),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Modify Location"),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ValueListenableBuilder(
+                valueListenable: _locationNameController,
+                builder: (context, TextEditingValue value, __) {
+                  return TextField(
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      labelText: 'Name for Location',
+                      errorText: _locationNameController.text.isEmpty
+                          ? "Value can't be empty"
+                          : null,
+                    ),
+                    controller: _locationNameController,
+                  );
+                }),
+            const SizedBox(height: 8.0),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Theme.of(context).dividerColor),
+                borderRadius: BorderRadius.circular(4.0),
+              ),
+              padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+              child: TagEditor(
+                length: values.length,
+                delimiters: const [',', ' ', ';'],
+                hasAddButton: false,
+                inputDecoration: const InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'Add tags here...',
+                ),
+                onTagChanged: (newValue) {
+                  setState(() {
+                    values.add(newValue);
+                  });
+                },
+                tagBuilder: (context, index) => Padding(
+                  padding: const EdgeInsets.only(top: 7.0),
+                  child: Chip(
+                    label: Text(values[index]),
+                    onDeleted: () {
+                      _onTagDetete(index);
+                    },
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8.0),
+            ElevatedButton(
+              onPressed: () {
+                _modifyLocation(); // Call function to modify location
+              },
+              child: const Text('Modify Location'),
+            ),
+          ],
         ),
       ),
     );

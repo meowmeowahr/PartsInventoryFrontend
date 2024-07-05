@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import 'package:image/image.dart' as img;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -8,6 +11,7 @@ import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 import 'package:flutter/services.dart';
 import 'package:material_tag_editor/tag_editor.dart';
+import 'package:image_picker/image_picker.dart';
 
 String convertUtcToLocal(String utcTimestamp) {
   DateTime utcDateTime =
@@ -15,6 +19,28 @@ String convertUtcToLocal(String utcTimestamp) {
   DateTime localDateTime = utcDateTime.toLocal();
   String formattedDate = DateFormat.yMMMd().add_jms().format(localDateTime);
   return formattedDate;
+}
+
+Future<Uint8List> resizeImageByWidth(XFile file, int targetWidth) async {
+  Uint8List fileBytes = await file.readAsBytes();
+  img.Image? originalImage = img.decodeImage(fileBytes);
+
+  if (originalImage == null) {
+    throw Exception('Failed to decode image.');
+  }
+
+  // Calculate the target height to maintain aspect ratio
+  int targetHeight =
+      (targetWidth * originalImage.height / originalImage.width).round();
+
+  // Resize the image
+  img.Image resizedImage =
+      img.copyResize(originalImage, width: targetWidth, height: targetHeight);
+
+  // Convert the resized image back to bytes
+  Uint8List resizedBytes = Uint8List.fromList(img.encodeJpg(resizedImage));
+
+  return resizedBytes;
 }
 
 void main() {
@@ -61,9 +87,20 @@ class MyHomePageState extends State<MyHomePage> {
   String partsSortType = "creationTimeDesc";
   String partsSearchQuery = "";
 
+  Future<void> getLostData() async {
+    if (Platform.isAndroid) {
+      final ImagePicker picker = ImagePicker();
+      final LostDataResponse response = await picker.retrieveLostData();
+      if (response.isEmpty) {
+        return;
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    getLostData();
     _fetchLocations();
     _fetchSorters();
   }
@@ -2969,8 +3006,10 @@ class PartInfoPageState extends State<PartInfoPage> {
         partUpdatedTimestamp = data["updated_at"];
         partCreatedTimestamp = data["created_at"];
 
-        if (data["image"].isNotEmpty) {
+        if (data["image"] != null) {
           partImage = base64Decode(data["image"]);
+        } else {
+          partImage = null;
         }
       });
       return data;
@@ -3071,6 +3110,140 @@ class PartInfoPageState extends State<PartInfoPage> {
           orElse: () => {});
     } else {
       return null;
+    }
+  }
+
+  Future<void> _editImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (image == null) {
+      return;
+    }
+
+    if (await image.length() > 1.049e+7) {
+      // 10MB-ish limit
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: const Text(
+            'Image size too large. Max size is 10MB',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+      );
+      return;
+    }
+
+    Uint8List fileBytes = await resizeImageByWidth(image, 480);
+    String base64String = base64Encode(fileBytes);
+
+    // Send image to api
+    final url = Uri.parse(
+        'http://localhost:8000/parts_individual/${widget.partId}/image');
+    try {
+      final response = await http.put(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, dynamic>{
+          'id': widget.partId,
+          'image': base64String,
+        }),
+      );
+      if (response.statusCode != 200) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Part modification failed!',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(response.body),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Part modification failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(e.toString()),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _removeImage() async {
+    // Send image to api
+    final url = Uri.parse(
+        'http://localhost:8000/parts_individual/${widget.partId}/image');
+    try {
+      final response = await http.put(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, dynamic>{
+          'id': widget.partId,
+          'image': null,
+        }),
+      );
+      if (response.statusCode != 200) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Part modification failed!',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(response.body),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Part modification failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(e.toString()),
+            ],
+          ),
+        ),
+      );
     }
   }
 
@@ -3218,16 +3391,96 @@ class PartInfoPageState extends State<PartInfoPage> {
   Widget _buildInfoPane() {
     return Column(
       children: [
-        partImage != null
-            ? Image.memory(
-                partImage!,
-                width: 320,
-              )
-            : Icon(
-                Icons.category_rounded,
-                size: 240,
-                color: Theme.of(context).colorScheme.primary,
-              ),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Stack(
+              alignment: Alignment.bottomCenter,
+              children: [
+                partImage != null
+                    ? Image.memory(
+                        partImage!,
+                        width: 480,
+                        alignment: Alignment.center,
+                      )
+                    : Icon(
+                        Icons.broken_image,
+                        size: 240,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                Align(
+                  alignment: Alignment.bottomRight,
+                  widthFactor: 12,
+                  child: Padding(
+                    padding: const EdgeInsets.all(2.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                        color: Theme.of(context).colorScheme.primary,
+                        borderRadius:
+                            const BorderRadius.all(Radius.circular(20)),
+                      ),
+                      child: PopupMenuButton(
+                        // onPressed: () {
+                        //   _editImage().then((value) {
+                        //     _fetchPartInfo().then((value) {
+                        //       setState(() {});
+                        //       return value;
+                        //     });
+                        //     return value;
+                        //   });
+                        // },
+                        itemBuilder: (BuildContext context) {
+                          List<PopupMenuItem> options = [
+                            const PopupMenuItem(
+                              value: "edit",
+                              child: Text("Edit Image"),
+                            )
+                          ];
+                          if (partImage != null) {
+                            options.add(
+                              const PopupMenuItem(
+                                value: "remove",
+                                child: Text("Remove Image"),
+                              ),
+                            );
+                          }
+                          return options;
+                        },
+                        tooltip: "Image options",
+                        onSelected: (value) {
+                          if (value == "edit") {
+                            _editImage().then((value) {
+                              _fetchPartInfo().then((value) {
+                                setState(() {});
+                                return value;
+                              });
+                              return value;
+                            });
+                          } else if (value == "remove") {
+                            _removeImage().then((value) {
+                              _fetchPartInfo().then((value) {
+                                setState(() {});
+                                return value;
+                              });
+                              return value;
+                            });
+                          }
+                        },
+                        icon: Icon(
+                          Icons.edit,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
         Text(
           "Located in: $partLocationName > $partSorterName",
           style: const TextStyle(fontSize: 24),

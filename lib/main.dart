@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ffi';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -810,13 +811,13 @@ class CreateSorterPageState extends State<CreateSorterPage> {
   bool autoGenerateId = true;
   String uniqueId = '';
   String? selectedLocation;
-  List<String> values = [];
+  List<String> sorterTags = [];
 
   late TextEditingController _uniqueIdController;
 
   void _onTagDetete(int index) {
     setState(() {
-      values.removeAt(index);
+      sorterTags.removeAt(index);
     });
   }
 
@@ -869,7 +870,7 @@ class CreateSorterPageState extends State<CreateSorterPage> {
           'id': uniqueId,
           'location': selectedLocation,
           'icon': 'blank',
-          'tags': values.join(","),
+          'tags': sorterTags.join(","),
           'attrs': {}
         }),
       );
@@ -998,7 +999,7 @@ class CreateSorterPageState extends State<CreateSorterPage> {
               ),
               padding: const EdgeInsets.only(left: 8.0, right: 8.0),
               child: TagEditor(
-                length: values.length,
+                length: sorterTags.length,
                 delimiters: const [',', ' ', ';'],
                 hasAddButton: false,
                 inputDecoration: const InputDecoration(
@@ -1007,13 +1008,13 @@ class CreateSorterPageState extends State<CreateSorterPage> {
                 ),
                 onTagChanged: (newValue) {
                   setState(() {
-                    values.add(newValue);
+                    sorterTags.add(newValue);
                   });
                 },
                 tagBuilder: (context, index) => Padding(
                   padding: const EdgeInsets.only(top: 7.0),
                   child: Chip(
-                    label: Text(values[index]),
+                    label: Text(sorterTags[index]),
                     onDeleted: () {
                       _onTagDetete(index);
                     },
@@ -1052,13 +1053,13 @@ class CreateLocationPageState extends State<CreateLocationPage> {
   bool autoGenerateId = true;
   String uniqueId = '';
   String? selectedLocation;
-  List<String> values = [];
+  List<String> locationTags = [];
 
   late TextEditingController _uniqueIdController;
 
   void _onTagDetete(int index) {
     setState(() {
-      values.removeAt(index);
+      locationTags.removeAt(index);
     });
   }
 
@@ -1110,7 +1111,7 @@ class CreateLocationPageState extends State<CreateLocationPage> {
           'name': locationName,
           'id': uniqueId,
           'icon': 'blank',
-          'tags': values.join(","),
+          'tags': locationTags.join(","),
           'attrs': {}
         }),
       );
@@ -1223,7 +1224,7 @@ class CreateLocationPageState extends State<CreateLocationPage> {
               ),
               padding: const EdgeInsets.only(left: 8.0, right: 8.0),
               child: TagEditor(
-                length: values.length,
+                length: locationTags.length,
                 delimiters: const [',', ' ', ';'],
                 hasAddButton: false,
                 inputDecoration: const InputDecoration(
@@ -1232,13 +1233,13 @@ class CreateLocationPageState extends State<CreateLocationPage> {
                 ),
                 onTagChanged: (newValue) {
                   setState(() {
-                    values.add(newValue);
+                    locationTags.add(newValue);
                   });
                 },
                 tagBuilder: (context, index) => Padding(
                   padding: const EdgeInsets.only(top: 7.0),
                   child: Chip(
-                    label: Text(values[index]),
+                    label: Text(locationTags[index]),
                     onDeleted: () {
                       _onTagDetete(index);
                     },
@@ -1316,6 +1317,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
         sorterId = data["id"];
         sorterLocation = data["location"];
         sorterTags = data["tags"].split(",");
+        sorterTags?.remove("");
       });
       sorterLocationName = getLocationName(sorterLocation!, widget.locations);
       return data;
@@ -1646,8 +1648,11 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                                 widget.onModify();
                               },
                               onModify: () {
-                                _fetchParts(sorterId!);
-                                Navigator.of(context).pop();
+                                parts = _fetchParts(sorterId!).then((value) {
+                                  setState(
+                                      () {}); // Force state update to show modified parts in list
+                                  return value;
+                                });
                                 widget.onModify();
                               },
                             ),
@@ -1686,7 +1691,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                                     ),
                                   ),
                                   Text(
-                                    "Quantity: ${_sortParts(filterParts(snapshot.data!, partsSearchQuery), partsSortType)[index]['enable_quantity'] ? _sortParts(filterParts(snapshot.data!, partsSearchQuery), partsSortType)[index]['quantity'].toString() : 'Disabled'}",
+                                    "Quantity: ${_sortParts(filterParts(snapshot.data!, partsSearchQuery), partsSortType)[index]['enable_quantity'] ? '${_sortParts(filterParts(snapshot.data!, partsSearchQuery), partsSortType)[index]['quantity'].toString()}${_sortParts(filterParts(snapshot.data!, partsSearchQuery), partsSortType)[index]['quantity_type'].toString()}' : 'Disabled'}",
                                     style: const TextStyle(
                                       fontSize: 16,
                                     ),
@@ -1880,13 +1885,13 @@ class ModifySorterPage extends StatefulWidget {
 class ModifySorterPageState extends State<ModifySorterPage> {
   late String uniqueId;
   String? selectedLocation;
-  List<String> values = [];
+  List<String> sorterTags = [];
 
   late TextEditingController _sorterNameController;
 
   void _onTagDetete(int index) {
     setState(() {
-      values.removeAt(index);
+      sorterTags.removeAt(index);
     });
   }
 
@@ -1895,7 +1900,8 @@ class ModifySorterPageState extends State<ModifySorterPage> {
     super.initState();
     uniqueId = widget.sorter['id'];
     selectedLocation = widget.sorter['location'];
-    values = widget.sorter['tags'].split(',');
+    sorterTags = widget.sorter['tags'].split(',');
+    sorterTags?.remove("");
 
     _sorterNameController = TextEditingController(text: widget.sorter['name']);
   }
@@ -1936,7 +1942,7 @@ class ModifySorterPageState extends State<ModifySorterPage> {
           'id': uniqueId,
           'location': selectedLocation,
           'icon': 'blank',
-          'tags': values.join(","),
+          'tags': sorterTags.join(","),
           'attrs': {}
         }),
       );
@@ -2042,7 +2048,7 @@ class ModifySorterPageState extends State<ModifySorterPage> {
               ),
               padding: const EdgeInsets.only(left: 8.0, right: 8.0),
               child: TagEditor(
-                length: values.length,
+                length: sorterTags.length,
                 delimiters: const [',', ' ', ';'],
                 hasAddButton: false,
                 inputDecoration: const InputDecoration(
@@ -2051,13 +2057,13 @@ class ModifySorterPageState extends State<ModifySorterPage> {
                 ),
                 onTagChanged: (newValue) {
                   setState(() {
-                    values.add(newValue);
+                    sorterTags.add(newValue);
                   });
                 },
                 tagBuilder: (context, index) => Padding(
                   padding: const EdgeInsets.only(top: 7.0),
                   child: Chip(
-                    label: Text(values[index]),
+                    label: Text(sorterTags[index]),
                     onDeleted: () {
                       _onTagDetete(index);
                     },
@@ -2129,6 +2135,7 @@ class LocationInfoPageState extends State<LocationInfoPage> {
         locationName = data["name"];
         locationId = data["id"];
         locationTags = data["tags"].split(",");
+        locationTags?.remove("");
       });
       return data;
     } else {
@@ -2685,13 +2692,13 @@ class ModifyLocationPage extends StatefulWidget {
 class ModifyLocationPageState extends State<ModifyLocationPage> {
   late String uniqueId;
   String? selectedLocation;
-  List<String> values = [];
+  List<String> locationTags = [];
 
   late TextEditingController _locationNameController;
 
   void _onTagDetete(int index) {
     setState(() {
-      values.removeAt(index);
+      locationTags.removeAt(index);
     });
   }
 
@@ -2700,7 +2707,8 @@ class ModifyLocationPageState extends State<ModifyLocationPage> {
     super.initState();
     uniqueId = widget.location['id'];
     selectedLocation = widget.location['location'];
-    values = widget.location['tags'].split(',');
+    locationTags = widget.location['tags'].split(',');
+    locationTags?.remove("");
 
     _locationNameController =
         TextEditingController(text: widget.location['name']);
@@ -2747,7 +2755,7 @@ class ModifyLocationPageState extends State<ModifyLocationPage> {
           'id': uniqueId,
           'location': selectedLocation,
           'icon': 'blank',
-          'tags': values.join(","),
+          'tags': locationTags.join(","),
           'attrs': {}
         }),
       );
@@ -2833,7 +2841,7 @@ class ModifyLocationPageState extends State<ModifyLocationPage> {
               ),
               padding: const EdgeInsets.only(left: 8.0, right: 8.0),
               child: TagEditor(
-                length: values.length,
+                length: locationTags.length,
                 delimiters: const [',', ' ', ';'],
                 hasAddButton: false,
                 inputDecoration: const InputDecoration(
@@ -2842,13 +2850,13 @@ class ModifyLocationPageState extends State<ModifyLocationPage> {
                 ),
                 onTagChanged: (newValue) {
                   setState(() {
-                    values.add(newValue);
+                    locationTags.add(newValue);
                   });
                 },
                 tagBuilder: (context, index) => Padding(
                   padding: const EdgeInsets.only(top: 7.0),
                   child: Chip(
-                    label: Text(values[index]),
+                    label: Text(locationTags[index]),
                     onDeleted: () {
                       _onTagDetete(index);
                     },
@@ -2924,6 +2932,7 @@ class PartInfoPageState extends State<PartInfoPage> {
             widget.sorters, widget.locations, data["sorter"]);
         partLocationName = partLocation?["name"];
         partTags = data["tags"].split(",");
+        partTags?.remove("");
       });
       return data;
     } else {
@@ -3237,9 +3246,9 @@ class PartInfoPageState extends State<PartInfoPage> {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
                       } else if (snapshot.hasData) {
-                        return ModifySorterPage(
-                            sorter: snapshot.data!,
-                            locations: widget.locations,
+                        return ModifyPartPage(
+                            part: snapshot.data!,
+                            sorters: widget.sorters,
                             onModified: () {
                               widget.onModify();
                               Navigator.of(context).pop();
@@ -3302,6 +3311,325 @@ class PartInfoPageState extends State<PartInfoPage> {
               return const Text('No data');
             }
           },
+        ),
+      ),
+    );
+  }
+}
+
+class ModifyPartPage extends StatefulWidget {
+  const ModifyPartPage({
+    super.key,
+    required this.part,
+    required this.sorters,
+    required this.onModified,
+  });
+
+  final Map<String, dynamic> part;
+  final List<dynamic> sorters;
+  final Function onModified;
+
+  @override
+  ModifyPartPageState createState() => ModifyPartPageState();
+}
+
+class ModifyPartPageState extends State<ModifyPartPage> {
+  late String uniqueId;
+  String? selectedSorter;
+  String? quantityType;
+  int quantity = 1;
+  bool enableQuantity = true;
+  List<String> partTags = [];
+
+  late TextEditingController _partNameController;
+  late TextEditingController _quantityController;
+
+  void _onTagDetete(int index) {
+    setState(() {
+      partTags.removeAt(index);
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    uniqueId = widget.part['id'];
+    selectedSorter = widget.part['sorter'];
+    quantity = widget.part['quantity'];
+    quantityType = widget.part['quantity_type'];
+    enableQuantity = widget.part["enable_quantity"].isOdd;
+    partTags = widget.part['tags'].split(',');
+    partTags?.remove("");
+
+    _partNameController = TextEditingController(text: widget.part['name']);
+    _quantityController =
+        TextEditingController(text: widget.part['quantity'].toString());
+  }
+
+  List<DropdownMenuItem<String>> buildLocationDropdownItems(
+      List<dynamic> locations) {
+    return locations.map<DropdownMenuItem<String>>((location) {
+      return DropdownMenuItem<String>(
+        value: location['id'].toString(),
+        child: Text(location['name'].toString()),
+      );
+    }).toList();
+  }
+
+  String? getUniqueIdValidationError() {
+    if (uniqueId.isEmpty) {
+      return "Value can't be empty";
+    }
+
+    RegExp regex = RegExp(r'[^\w-]');
+    if (regex.hasMatch(uniqueId)) {
+      return "Special characters are not allowed";
+    }
+    return null;
+  }
+
+  Future<void> _modifyPart() async {
+    final url = Uri.parse(
+        'http://localhost:8000/parts_individual/$uniqueId'); // Replace with your API endpoint
+    try {
+      final response = await http.put(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, dynamic>{
+          'name': _partNameController.text,
+          'id': uniqueId,
+          'sorter': selectedSorter,
+          'quantity': int.tryParse(_quantityController.text),
+          'quantity_type': quantityType,
+          'enable_quantity': enableQuantity,
+          'image': null,
+          'tags': partTags.join(","),
+          'attrs': {}
+        }),
+      );
+      if (response.statusCode == 200) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Part modified successfully!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        Navigator.of(context).pop();
+        widget.onModified();
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Part modification failed!',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(response.body),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Part modification failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(e.toString()),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Modify Part"),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: ListView(
+          children: [
+            ValueListenableBuilder(
+                valueListenable: _partNameController,
+                builder: (context, TextEditingValue value, __) {
+                  return TextField(
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      labelText: 'Name for Part',
+                      errorText: _partNameController.text.isEmpty
+                          ? "Value can't be empty"
+                          : null,
+                    ),
+                    controller: _partNameController,
+                  );
+                }),
+            const SizedBox(height: 8.0),
+            DropdownButtonFormField<String>(
+              value: widget.sorters
+                      .any((location) => location['id'] == selectedSorter)
+                  ? selectedSorter
+                  : null,
+              onChanged: (value) {
+                setState(() {
+                  selectedSorter = value;
+                });
+              },
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                labelText: 'Select Location',
+                errorText:
+                    selectedSorter == null ? "Value can't be empty" : null,
+              ),
+              items: buildLocationDropdownItems(widget.sorters),
+            ),
+            const SizedBox(height: 8.0),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Theme.of(context).dividerColor),
+                borderRadius: BorderRadius.circular(4.0),
+              ),
+              padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+              child: TagEditor(
+                length: partTags.length,
+                delimiters: const [',', ' ', ';'],
+                hasAddButton: false,
+                inputDecoration: const InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'Add tags here...',
+                ),
+                onTagChanged: (newValue) {
+                  setState(() {
+                    partTags.add(newValue);
+                  });
+                },
+                tagBuilder: (context, index) => Padding(
+                  padding: const EdgeInsets.only(top: 7.0),
+                  child: Chip(
+                    label: Text(partTags[index]),
+                    onDeleted: () {
+                      _onTagDetete(index);
+                    },
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8.0),
+            Row(
+              children: [
+                Checkbox(
+                    value: enableQuantity,
+                    onChanged: (value) {
+                      setState(() {
+                        enableQuantity = value!;
+                      });
+                    }),
+                const Text("Enable Quantity Tracking")
+              ],
+            ),
+            const SizedBox(height: 8.0),
+            Row(
+              children: [
+                Expanded(
+                  child: ValueListenableBuilder(
+                      // Note: pass _controller to the animation argument
+                      valueListenable: _quantityController,
+                      builder: (context, TextEditingValue value, __) {
+                        return TextField(
+                          decoration: InputDecoration(
+                              labelText: "Quantity",
+                              errorText: _quantityController.text.isEmpty
+                                  ? "Value can't be empty"
+                                  : null,
+                              border: const OutlineInputBorder()),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: <TextInputFormatter>[
+                            FilteringTextInputFormatter.digitsOnly
+                          ],
+                          controller: _quantityController,
+                          enabled: enableQuantity,
+                        );
+                      }),
+                ),
+                const SizedBox(width: 8.0),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: quantityType,
+                    onChanged: enableQuantity
+                        ? (value) {
+                            setState(() {
+                              quantityType = value;
+                            });
+                          }
+                        : null,
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      labelText: 'Quantity Type',
+                      errorText: selectedSorter == null
+                          ? "Value can't be empty"
+                          : null,
+                    ),
+                    items: const [
+                      DropdownMenuItem<String>(
+                        value: "pcs",
+                        child: Text("pcs"),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: "bags",
+                        child: Text("bags"),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: "box",
+                        child: Text("boxes"),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: "reels",
+                        child: Text("reels"),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: "m",
+                        child: Text("meters"),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: "cm",
+                        child: Text("centimeters"),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: "ft",
+                        child: Text("feet"),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8.0),
+            ElevatedButton(
+              onPressed: () {
+                _modifyPart(); // Call function to modify sorter
+              },
+              child: const Text('Save Changes'),
+            ),
+          ],
         ),
       ),
     );

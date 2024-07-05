@@ -2935,6 +2935,7 @@ class PartInfoPageState extends State<PartInfoPage> {
   String partLocation = "";
   String partUpdatedTimestamp = "";
   String partCreatedTimestamp = "";
+  Uint8List? partImage;
 
   @override
   void initState() {
@@ -2967,6 +2968,10 @@ class PartInfoPageState extends State<PartInfoPage> {
         partNotes = data["notes"];
         partUpdatedTimestamp = data["updated_at"];
         partCreatedTimestamp = data["created_at"];
+
+        if (data["image"].isNotEmpty) {
+          partImage = base64Decode(data["image"]);
+        }
       });
       return data;
     } else {
@@ -3213,11 +3218,16 @@ class PartInfoPageState extends State<PartInfoPage> {
   Widget _buildInfoPane() {
     return Column(
       children: [
-        Icon(
-          Icons.category_rounded,
-          size: 240,
-          color: Theme.of(context).colorScheme.primary,
-        ),
+        partImage != null
+            ? Image.memory(
+                partImage!,
+                width: 320,
+              )
+            : Icon(
+                Icons.category_rounded,
+                size: 240,
+                color: Theme.of(context).colorScheme.primary,
+              ),
         Text(
           "Located in: $partLocationName > $partSorterName",
           style: const TextStyle(fontSize: 24),

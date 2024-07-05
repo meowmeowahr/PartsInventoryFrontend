@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:ffi';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -1904,7 +1903,7 @@ class ModifySorterPageState extends State<ModifySorterPage> {
     uniqueId = widget.sorter['id'];
     selectedLocation = widget.sorter['location'];
     sorterTags = widget.sorter['tags'].split(',');
-    sorterTags?.remove("");
+    sorterTags.remove("");
 
     _sorterNameController = TextEditingController(text: widget.sorter['name']);
   }
@@ -2711,7 +2710,7 @@ class ModifyLocationPageState extends State<ModifyLocationPage> {
     uniqueId = widget.location['id'];
     selectedLocation = widget.location['location'];
     locationTags = widget.location['tags'].split(',');
-    locationTags?.remove("");
+    locationTags.remove("");
 
     _locationNameController =
         TextEditingController(text: widget.location['name']);
@@ -2909,9 +2908,15 @@ class PartInfoPageState extends State<PartInfoPage> {
   String? partName;
   String? partLocationName;
   String? partSorterId;
-  Map<String, dynamic>? partLocation;
+  Map<String, dynamic>? partPhysicalLocation;
   String? partSorterName;
   List<String>? partTags;
+  int partQuantity = 0;
+  String partQuantityType = "pcs";
+  bool partQuantityEnabled = true;
+  double partPrice = 0;
+  String partNotes = "";
+  String partLocation = "";
 
   @override
   void initState() {
@@ -2931,48 +2936,21 @@ class PartInfoPageState extends State<PartInfoPage> {
         partName = data["name"];
         partSorterId = data["sorter"];
         partSorterName = getSorterName(data["sorter"], widget.sorters);
-        partLocation = getLocationBySorterId(
+        partPhysicalLocation = getLocationBySorterId(
             widget.sorters, widget.locations, data["sorter"]);
-        partLocationName = partLocation?["name"];
+        partLocationName = partPhysicalLocation?["name"];
         partTags = data["tags"].split(",");
         partTags?.remove("");
+        partQuantity = data["quantity"];
+        partQuantityType = data["quantity_type"];
+        partQuantityEnabled = data["enable_quantity"].isOdd;
+        partPrice = data["price"].toDouble();
+        partLocation = data["location"];
+        partNotes = data["notes"];
       });
       return data;
     } else {
       throw Exception('Failed to load part information');
-    }
-  }
-
-  Future<List> _fetchParts(String sorter) async {
-    final url = Uri.parse(
-        'http://localhost:8000/parts/$sorter'); // Replace with your API endpoint
-    try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        final List<dynamic> partsJson = jsonDecode(response.body);
-        return partsJson;
-      } else {
-        throw Exception('Failed to load parts');
-      }
-    } catch (e) {
-      if (!mounted) return [];
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Theme.of(context).colorScheme.error,
-          content: Column(
-            children: [
-              const Text(
-                'Parts fetch failed!',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(
-                e.toString(),
-              ),
-            ],
-          ),
-        ),
-      );
-      return [];
     }
   }
 
@@ -2985,30 +2963,6 @@ class PartInfoPageState extends State<PartInfoPage> {
 
       return name.contains(query) || tags.any((tag) => tag.contains(query));
     }).toList();
-  }
-
-  List _sortParts(List parts, String sorter) {
-    List sortedParts = List.from(parts);
-    switch (sorter) {
-      case 'creationTimeDesc':
-        // Already in descending order
-        break;
-      case 'creationTimeAsc':
-        sortedParts = sortedParts.reversed.toList();
-        break;
-      case 'nameAsc':
-        sortedParts.sort((a, b) =>
-            a['name'].toLowerCase().compareTo(b['name'].toLowerCase()));
-        break;
-      case 'nameDesc':
-        sortedParts.sort((a, b) =>
-            b['name'].toLowerCase().compareTo(a['name'].toLowerCase()));
-        break;
-      default:
-        // Handle invalid sorter case if needed
-        break;
-    }
-    return sortedParts;
   }
 
   String? getSorterName(String sorterId, List<dynamic> sorters) {
@@ -3095,6 +3049,70 @@ class PartInfoPageState extends State<PartInfoPage> {
     }
   }
 
+  Future<void> _updatePart() async {
+    final url = Uri.parse(
+        'http://localhost:8000/parts_individual/${widget.partId}'); // Replace with your API endpoint
+    try {
+      final response = await http.put(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, dynamic>{
+          'name': partName,
+          'id': widget.partId,
+          'sorter': partSorterId,
+          'quantity': partQuantity,
+          'quantity_type': partQuantityType,
+          'enable_quantity': partQuantityEnabled,
+          'price': partPrice,
+          'notes': partNotes,
+          'location': partLocation,
+          'image': null,
+          'tags': partTags?.join(","),
+          'attrs': {}
+        }),
+      );
+      if (response.statusCode != 200) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Part modification failed!',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(response.body),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Part modification failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(e.toString()),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
   Future<void> deletePart(String partId) async {
     final url = Uri.parse(
         'http://localhost:8000/parts_individual/$partId'); // Replace with your API endpoint
@@ -3165,6 +3183,13 @@ class PartInfoPageState extends State<PartInfoPage> {
     );
   }
 
+  String getPriceString(
+      double partPrice, int partQuantity, bool enableQuantity) {
+    return enableQuantity
+        ? "\$${(partPrice * partQuantity).toString()} (\$${partPrice.toString()} each)"
+        : "\$${partPrice.toString()} each";
+  }
+
   Widget _buildInfoPane() {
     return Column(
       children: [
@@ -3204,8 +3229,9 @@ class PartInfoPageState extends State<PartInfoPage> {
           children: [
             const Text("Tags:"),
             const SizedBox(width: 4.0),
-            partTags?.firstOrNull != ""
-                ? Flexible(
+            ["", null].contains(partTags?.firstOrNull)
+                ? const Text("No Tags")
+                : Flexible(
                     child: Wrap(
                       spacing: 4.0,
                       runSpacing: 4.0,
@@ -3225,9 +3251,61 @@ class PartInfoPageState extends State<PartInfoPage> {
                       ],
                     ),
                   )
-                : const Text("No Tags")
           ],
         ),
+        const Divider(),
+        NumberSpinner(
+          value: partQuantity,
+          title: "Quantity",
+          suffix: partQuantityType,
+          enabled: partQuantityEnabled,
+          onChanged: (value) {
+            setState(() {
+              partQuantity = value;
+              _updatePart();
+            });
+          },
+        ),
+        const Divider(),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              const Text("Price",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              Text(getPriceString(partPrice, partQuantity, partQuantityEnabled),
+                  style: const TextStyle(fontSize: 18))
+            ],
+          ),
+        ),
+        const Divider(),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              const Text("Location",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              Text(partLocation == "" ? "Empty" : partLocation,
+                  style: const TextStyle(fontSize: 18))
+            ],
+          ),
+        ),
+        const Divider(),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              const Text("Notes",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              Text(partNotes == "" ? "Empty" : partNotes,
+                  style: const TextStyle(fontSize: 18))
+            ],
+          ),
+        ),
+        const Divider(),
       ],
     );
   }
@@ -3254,7 +3332,10 @@ class PartInfoPageState extends State<PartInfoPage> {
                             sorters: widget.sorters,
                             onModified: () {
                               widget.onModify();
-                              Navigator.of(context).pop();
+                              _partInfo = _fetchPartInfo().then((value) {
+                                setState(() {});
+                                return value;
+                              });
                             });
                       } else {
                         return Text('Error: ${snapshot.error}');
@@ -3343,9 +3424,14 @@ class ModifyPartPageState extends State<ModifyPartPage> {
   int quantity = 1;
   bool enableQuantity = true;
   List<String> partTags = [];
+  String partLocation = "Unknown";
+  String? partNotes;
 
   late TextEditingController _partNameController;
   late TextEditingController _quantityController;
+  late TextEditingController _priceController;
+  late TextEditingController _locationController;
+  late TextEditingController _notesController;
 
   void _onTagDetete(int index) {
     setState(() {
@@ -3362,11 +3448,15 @@ class ModifyPartPageState extends State<ModifyPartPage> {
     quantityType = widget.part['quantity_type'];
     enableQuantity = widget.part["enable_quantity"].isOdd;
     partTags = widget.part['tags'].split(',');
-    partTags?.remove("");
+    partTags.remove("");
 
     _partNameController = TextEditingController(text: widget.part['name']);
     _quantityController =
         TextEditingController(text: widget.part['quantity'].toString());
+    _priceController =
+        TextEditingController(text: widget.part['price'].toString());
+    _locationController = TextEditingController(text: widget.part['location']);
+    _notesController = TextEditingController(text: widget.part['notes']);
   }
 
   List<DropdownMenuItem<String>> buildLocationDropdownItems(
@@ -3407,7 +3497,9 @@ class ModifyPartPageState extends State<ModifyPartPage> {
           'quantity': int.tryParse(_quantityController.text),
           'quantity_type': quantityType,
           'enable_quantity': enableQuantity,
-          'image': null,
+          'price': double.tryParse(_priceController.text),
+          'notes': _notesController.text,
+          'location': _locationController.text,
           'tags': partTags.join(","),
           'attrs': {}
         }),
@@ -3626,6 +3718,48 @@ class ModifyPartPageState extends State<ModifyPartPage> {
               ],
             ),
             const SizedBox(height: 8.0),
+            ValueListenableBuilder(
+                // Note: pass _controller to the animation argument
+                valueListenable: _priceController,
+                builder: (context, TextEditingValue value, __) {
+                  return TextField(
+                    decoration: InputDecoration(
+                        prefixText: r"$",
+                        labelText: "Price per Unit",
+                        errorText: _priceController.text.isEmpty
+                            ? "Value can't be empty"
+                            : null,
+                        border: const OutlineInputBorder()),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: <TextInputFormatter>[
+                      FilteringTextInputFormatter.allow(RegExp(r"[0-9]|\."))
+                    ],
+                    controller: _priceController,
+                  );
+                }),
+            const SizedBox(height: 8.0),
+            ValueListenableBuilder(
+                // Note: pass _controller to the animation argument
+                valueListenable: _locationController,
+                builder: (context, TextEditingValue value, __) {
+                  return TextField(
+                    decoration: InputDecoration(
+                        labelText: "Location",
+                        errorText: _locationController.text.isEmpty
+                            ? "Value can't be empty"
+                            : null,
+                        border: const OutlineInputBorder()),
+                    controller: _locationController,
+                  );
+                }),
+            const SizedBox(height: 8.0),
+            TextField(
+              decoration: const InputDecoration(
+                  labelText: "Notes", border: OutlineInputBorder()),
+              controller: _notesController,
+              maxLines: 4,
+            ),
+            const SizedBox(height: 8.0),
             ElevatedButton(
               onPressed: () {
                 _modifyPart(); // Call function to modify sorter
@@ -3634,6 +3768,107 @@ class ModifyPartPageState extends State<ModifyPartPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class NumberSpinner extends StatelessWidget {
+  final int value;
+  final int minValue;
+  final int maxValue;
+  final String? title;
+  final String suffix;
+  final bool enabled;
+  final ValueChanged<int> onChanged;
+
+  const NumberSpinner({
+    super.key,
+    required this.value,
+    this.minValue = 0,
+    this.maxValue = 100,
+    this.title,
+    this.suffix = "",
+    this.enabled = true,
+    required this.onChanged,
+  });
+
+  void _increment() {
+    if (value < maxValue) {
+      onChanged(value + 1);
+    }
+  }
+
+  void _decrement() {
+    if (value > minValue) {
+      onChanged(value - 1);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Column(
+        children: [
+          title != null
+              ? Text(
+                  title!,
+                  style: TextStyle(
+                      fontSize: 22,
+                      color: Theme.of(context).colorScheme.primary),
+                )
+              : const SizedBox(),
+          enabled
+              ? Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ElevatedButton(
+                        onPressed: _decrement,
+                        style: ElevatedButton.styleFrom(
+                          elevation: 2,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 30.0, vertical: 30.0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.0),
+                          ),
+                        ),
+                        child: const Icon(Icons.remove),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Text(
+                          '$value$suffix',
+                          style: const TextStyle(fontSize: 24.0),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: _increment,
+                        style: ElevatedButton.styleFrom(
+                          elevation: 2,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 30.0, vertical: 30.0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.0),
+                          ),
+                        ),
+                        child: const Icon(Icons.add),
+                      ),
+                    ],
+                  ),
+                )
+              : Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    "Disabled",
+                    style: TextStyle(
+                        fontSize: 22,
+                        color: Theme.of(context).colorScheme.primary),
+                  ),
+                ),
+        ],
       ),
     );
   }

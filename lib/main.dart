@@ -1643,8 +1643,11 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                               locations: widget.locations,
                               sorters: widget.sorters,
                               onDelete: () {
-                                _fetchParts(sorterId!);
-                                Navigator.of(context).pop();
+                                parts = _fetchParts(sorterId!).then((value) {
+                                  setState(
+                                      () {}); // Force state update to show modified parts in list
+                                  return value;
+                                });
                                 widget.onModify();
                               },
                               onModify: () {
@@ -3102,7 +3105,7 @@ class PartInfoPageState extends State<PartInfoPage> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Sorter deleted successfully!'),
+            content: Text('Part deleted successfully!'),
           ),
         );
         widget.onDelete();
@@ -3136,9 +3139,9 @@ class PartInfoPageState extends State<PartInfoPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Delete Sorter'),
+          title: const Text('Delete Part'),
           content: const Text(
-              'Are you sure you want to delete this sorter? Parts will not be deleted, but be left as orphaned parts. To resolve that, delete them or create a new sorter with the same unique id is the one being deleted.'),
+              'Are you sure you want to delete this part? Deleted parts CANNOT be recovered.'),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancel'),

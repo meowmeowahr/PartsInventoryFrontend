@@ -1,11 +1,21 @@
 import 'dart:convert';
 
+import 'package:intl/intl.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 import 'package:flutter/services.dart';
 import 'package:material_tag_editor/tag_editor.dart';
+
+String convertUtcToLocal(String utcTimestamp) {
+  DateTime utcDateTime =
+      DateFormat("yyyy-MM-dd HH:mm:ss").parse(utcTimestamp, true);
+  DateTime localDateTime = utcDateTime.toLocal();
+  String formattedDate = DateFormat.yMMMd().add_jms().format(localDateTime);
+  return formattedDate;
+}
 
 void main() {
   runApp(const MyApp());
@@ -2917,6 +2927,8 @@ class PartInfoPageState extends State<PartInfoPage> {
   double partPrice = 0;
   String partNotes = "";
   String partLocation = "";
+  String partUpdatedTimestamp = "";
+  String partCreatedTimestamp = "";
 
   @override
   void initState() {
@@ -2947,6 +2959,8 @@ class PartInfoPageState extends State<PartInfoPage> {
         partPrice = data["price"].toDouble();
         partLocation = data["location"];
         partNotes = data["notes"];
+        partUpdatedTimestamp = data["updated_at"];
+        partCreatedTimestamp = data["created_at"];
       });
       return data;
     } else {
@@ -3257,7 +3271,7 @@ class PartInfoPageState extends State<PartInfoPage> {
         NumberSpinner(
           value: partQuantity,
           title: "Quantity",
-          suffix: partQuantityType,
+          suffix: " $partQuantityType",
           enabled: partQuantityEnabled,
           onChanged: (value) {
             setState(() {
@@ -3301,6 +3315,32 @@ class PartInfoPageState extends State<PartInfoPage> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const Spacer(),
               Text(partNotes == "" ? "Empty" : partNotes,
+                  style: const TextStyle(fontSize: 18))
+            ],
+          ),
+        ),
+        const Divider(),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              const Text("Updated at",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              Text(convertUtcToLocal(partUpdatedTimestamp),
+                  style: const TextStyle(fontSize: 18))
+            ],
+          ),
+        ),
+        const Divider(),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              const Text("Created at",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              Text(convertUtcToLocal(partCreatedTimestamp),
                   style: const TextStyle(fontSize: 18))
             ],
           ),

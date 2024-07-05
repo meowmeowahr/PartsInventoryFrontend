@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:image/image.dart' as img;
 
@@ -87,20 +86,9 @@ class MyHomePageState extends State<MyHomePage> {
   String partsSortType = "creationTimeDesc";
   String partsSearchQuery = "";
 
-  Future<void> getLostData() async {
-    if (Platform.isAndroid) {
-      final ImagePicker picker = ImagePicker();
-      final LostDataResponse response = await picker.retrieveLostData();
-      if (response.isEmpty) {
-        return;
-      }
-    }
-  }
-
   @override
   void initState() {
     super.initState();
-    getLostData();
     _fetchLocations();
     _fetchSorters();
   }

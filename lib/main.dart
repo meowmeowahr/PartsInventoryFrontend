@@ -1709,6 +1709,12 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                                     ),
                                   ),
                                   Text(
+                                    "Location: ${_sortParts(filterParts(snapshot.data!, partsSearchQuery), partsSortType)[index]['location']}",
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  Text(
                                     _sortParts(
                                         filterParts(
                                             snapshot.data!, partsSearchQuery),
@@ -3410,26 +3416,10 @@ class PartInfoPageState extends State<PartInfoPage> {
             } else if (snapshot.hasError) {
               return Text('Error: ${snapshot.error}');
             } else if (snapshot.hasData) {
-              return LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth > 600) {
-                    // Two-column layout for larger screens
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: _buildInfoPane(),
-                        ),
-                      ],
-                    );
-                  } else {
-                    // One-column layout for smaller screens
-                    return ListView(
-                      children: [
-                        _buildInfoPane(),
-                      ],
-                    );
-                  }
-                },
+              return ListView(
+                children: [
+                  _buildInfoPane(),
+                ],
               );
             } else {
               return const Text('No data');

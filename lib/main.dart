@@ -3591,7 +3591,7 @@ class ModifyPartPageState extends State<ModifyPartPage> {
               },
               decoration: InputDecoration(
                 border: const OutlineInputBorder(),
-                labelText: 'Select Location',
+                labelText: 'Select Sorter',
                 errorText:
                     selectedSorter == null ? "Value can't be empty" : null,
               ),

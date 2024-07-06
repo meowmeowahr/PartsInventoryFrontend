@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_tag_editor/tag_editor.dart';
+import 'package:responsive_grid/responsive_grid.dart';
 
 import 'sorters.dart';
 import 'widgets.dart';
@@ -413,6 +414,7 @@ class LocationInfoPageState extends State<LocationInfoPage> {
               child: Text(
                 "ID: $locationId",
                 softWrap: true,
+                textAlign: TextAlign.center,
               ),
             ),
             const SizedBox(width: 4.0),
@@ -538,195 +540,192 @@ class LocationInfoPageState extends State<LocationInfoPage> {
   }
 
   Widget _buildSortersPane() {
-    return Expanded(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: CustomSearchBar(
-                    onChanged: (value) {
-                      setState(() {
-                        sorterSearchQuery = value;
-                      });
-                    },
-                  ),
-                ),
-                const SizedBox(
-                  width: 4.0,
-                ),
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.sort),
-                  tooltip: "Sort",
-                  onSelected: (String value) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: CustomSearchBar(
+                  onChanged: (value) {
                     setState(() {
-                      sortersSortType = value;
+                      sorterSearchQuery = value;
                     });
                   },
-                  itemBuilder: (BuildContext context) =>
-                      <PopupMenuEntry<String>>[
-                    const PopupMenuItem<String>(
-                      value: 'creationTimeDesc',
-                      child: Text('Creation Time Descending'),
-                    ),
-                    const PopupMenuItem<String>(
-                      value: 'creationTimeAsc',
-                      child: Text('Creation Time Ascending'),
-                    ),
-                    const PopupMenuItem<String>(
-                      value: 'nameAsc',
-                      child: Text('Name Ascending'),
-                    ),
-                    const PopupMenuItem<String>(
-                      value: 'nameDesc',
-                      child: Text('Name Descending'),
-                    ),
-                  ],
                 ),
-                const SizedBox(
-                  width: 4.0,
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(
+                width: 4.0,
+              ),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.sort),
+                tooltip: "Sort",
+                onSelected: (String value) {
+                  setState(() {
+                    sortersSortType = value;
+                  });
+                },
+                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  const PopupMenuItem<String>(
+                    value: 'creationTimeDesc',
+                    child: Text('Creation Time Descending'),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'creationTimeAsc',
+                    child: Text('Creation Time Ascending'),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'nameAsc',
+                    child: Text('Name Ascending'),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'nameDesc',
+                    child: Text('Name Descending'),
+                  ),
+                ],
+              ),
+              const SizedBox(
+                width: 4.0,
+              ),
+            ],
           ),
-          ColumnBuilder(
-            itemCount: filterSorters(
-                    filterSortersByLocationId(locationId!, _sorters),
-                    sorterSearchQuery)
-                .length,
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SorterInfoPage(
-                          sorterId: _sortSorters(
-                              filterSorters(
-                                  filterSortersByLocationId(
-                                      locationId!, _sorters),
-                                  sorterSearchQuery),
-                              sortersSortType)[index]['id'],
-                          locations: widget.locations,
-                          sorters: _sorters,
-                          onDelete: () {
-                            _fetchSorters();
-                            Navigator.of(context).pop();
-                            widget.onModify();
-                          },
-                          onModify: () {
-                            _fetchSorters();
-                            Navigator.of(context).pop();
-                            widget.onModify();
-                          },
-                        ),
+        ),
+        ResponsiveStaggeredGridList(
+          desiredItemWidth: 320,
+          children: List.generate(
+              filterSorters(filterSortersByLocationId(locationId!, _sorters),
+                      sorterSearchQuery)
+                  .length, (index) {
+            return Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SorterInfoPage(
+                        sorterId: _sortSorters(
+                            filterSorters(
+                                filterSortersByLocationId(
+                                    locationId!, _sorters),
+                                sorterSearchQuery),
+                            sortersSortType)[index]['id'],
+                        locations: widget.locations,
+                        sorters: _sorters,
+                        onDelete: () {
+                          _fetchSorters();
+                          Navigator.of(context).pop();
+                          widget.onModify();
+                        },
+                        onModify: () {
+                          _fetchSorters();
+                          Navigator.of(context).pop();
+                          widget.onModify();
+                        },
                       ),
-                    );
-                  },
-                  style: ButtonStyle(
-                    shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                      RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
+                    ),
+                  );
+                },
+                style: ButtonStyle(
+                  shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                    RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.0),
                     ),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          // String2Icon.getIconDataFromString(
-                          //     _sorters[index]['icon']),
-                          Icons.inventory_2,
-                          size: 64,
-                        ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                _sortSorters(
-                                    filterSorters(
-                                        filterSortersByLocationId(
-                                            locationId!, _sorters),
-                                        sorterSearchQuery),
-                                    sortersSortType)[index]['name'],
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                ),
-                              ),
-                              Text(
-                                _sortSorters(
-                                    filterSorters(
-                                        filterSortersByLocationId(
-                                            locationId!, _sorters),
-                                        sorterSearchQuery),
-                                    sortersSortType)[index]['id'],
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              const SizedBox(
-                                height: 4.0,
-                              ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        // String2Icon.getIconDataFromString(
+                        //     _sorters[index]['icon']),
+                        Icons.inventory_2,
+                        size: 64,
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
                               _sortSorters(
-                                          filterSorters(
-                                              filterSortersByLocationId(
-                                                  locationId!, _sorters),
-                                              sorterSearchQuery),
-                                          sortersSortType)[index]['tags'] !=
-                                      ""
-                                  ? Wrap(
-                                      direction: Axis.horizontal,
-                                      spacing:
-                                          4.0, // Space between adjacent widgets
-                                      runSpacing:
-                                          4.0, // Space between lines of widgets
-                                      children: [
-                                        for (var tag in _sortSorters(
-                                                filterSorters(
-                                                    filterSortersByLocationId(
-                                                        locationId!, _sorters),
-                                                    sorterSearchQuery),
-                                                sortersSortType)[index]['tags']
-                                            .split(','))
-                                          Chip(
-                                            label: Text(
-                                              tag,
-                                              style:
-                                                  const TextStyle(fontSize: 11),
-                                            ),
-                                            materialTapTargetSize:
-                                                MaterialTapTargetSize
-                                                    .shrinkWrap,
-                                            labelPadding: EdgeInsets.zero,
-                                            visualDensity: const VisualDensity(
-                                                horizontal: 0.0, vertical: -4),
+                                  filterSorters(
+                                      filterSortersByLocationId(
+                                          locationId!, _sorters),
+                                      sorterSearchQuery),
+                                  sortersSortType)[index]['name'],
+                              style: const TextStyle(
+                                fontSize: 18,
+                              ),
+                            ),
+                            Text(
+                              _sortSorters(
+                                  filterSorters(
+                                      filterSortersByLocationId(
+                                          locationId!, _sorters),
+                                      sorterSearchQuery),
+                                  sortersSortType)[index]['id'],
+                              textAlign: TextAlign.end,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(
+                              height: 4.0,
+                            ),
+                            _sortSorters(
+                                        filterSorters(
+                                            filterSortersByLocationId(
+                                                locationId!, _sorters),
+                                            sorterSearchQuery),
+                                        sortersSortType)[index]['tags'] !=
+                                    ""
+                                ? Wrap(
+                                    direction: Axis.horizontal,
+                                    spacing:
+                                        4.0, // Space between adjacent widgets
+                                    runSpacing:
+                                        4.0, // Space between lines of widgets
+                                    children: [
+                                      for (var tag in _sortSorters(
+                                              filterSorters(
+                                                  filterSortersByLocationId(
+                                                      locationId!, _sorters),
+                                                  sorterSearchQuery),
+                                              sortersSortType)[index]['tags']
+                                          .split(','))
+                                        Chip(
+                                          label: Text(
+                                            tag,
+                                            style:
+                                                const TextStyle(fontSize: 11),
                                           ),
-                                      ],
-                                    )
-                                  : Text("No Tags",
-                                      style: TextStyle(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onBackground))
-                            ],
-                          ),
+                                          materialTapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                          labelPadding: EdgeInsets.zero,
+                                          visualDensity: const VisualDensity(
+                                              horizontal: 0.0, vertical: -4),
+                                        ),
+                                    ],
+                                  )
+                                : Text("No Tags",
+                                    style: TextStyle(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onBackground))
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              );
-            },
-          ),
-        ],
-      ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
@@ -790,12 +789,15 @@ class LocationInfoPageState extends State<LocationInfoPage> {
                 builder: (context, constraints) {
                   if (constraints.maxWidth > 600) {
                     // Two-column layout for larger screens
-                    return Row(
+                    return Flex(
+                      direction: Axis.horizontal,
                       children: [
-                        Expanded(
+                        Flexible(
+                          flex: 1,
                           child: _buildInfoPane(),
                         ),
-                        Expanded(
+                        Flexible(
+                          flex: 2,
                           child: _buildSortersPane(),
                         ),
                       ],

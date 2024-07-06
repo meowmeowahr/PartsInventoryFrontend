@@ -42,6 +42,7 @@ dependencies:
   image_picker_for_web: ^3.0.4
   image_picker: ^1.1.2
   flutter_linkify: ^6.0.0
+  responsive_grid: ^2.4.4
 
 dev_dependencies:
   flutter_test:

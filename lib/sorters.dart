@@ -379,6 +379,14 @@ class SorterInfoPageState extends State<SorterInfoPage> {
         sortedParts.sort((a, b) =>
             b['name'].toLowerCase().compareTo(a['name'].toLowerCase()));
         break;
+      case 'locDesc':
+        sortedParts.sort((a, b) =>
+            b['location'].toLowerCase().compareTo(a['location'].toLowerCase()));
+        break;
+      case 'locAsc':
+        sortedParts.sort((a, b) =>
+            b['location'].toLowerCase().compareTo(a['location'].toLowerCase()));
+        break;
       default:
         // Handle invalid sorter case if needed
         break;
@@ -608,6 +616,14 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                         const PopupMenuItem<String>(
                           value: 'nameDesc',
                           child: Text('Name Descending'),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: 'locAsc',
+                          child: Text('Location Name Ascending'),
+                        ),
+                        const PopupMenuItem<String>(
+                          value: 'LocDesc',
+                          child: Text('Location Name Descending'),
                         ),
                       ],
                     ),

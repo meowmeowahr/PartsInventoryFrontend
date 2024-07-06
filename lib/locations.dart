@@ -591,12 +591,11 @@ class LocationInfoPageState extends State<LocationInfoPage> {
               ],
             ),
           ),
-          ListView.builder(
+          ColumnBuilder(
             itemCount: filterSorters(
                     filterSortersByLocationId(locationId!, _sorters),
                     sorterSearchQuery)
                 .length,
-            shrinkWrap: true,
             itemBuilder: (context, index) {
               return Padding(
                 padding: const EdgeInsets.all(4.0),

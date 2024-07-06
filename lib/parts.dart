@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:intl/intl.dart';
 import 'package:image/image.dart' as img;
+import 'package:uuid/uuid.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:flutter/material.dart';
@@ -1226,6 +1227,424 @@ class ModifyPartPageState extends State<ModifyPartPage> {
                 _modifyPart(); // Call function to modify sorter
               },
               child: const Text('Save Changes'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class CreatePartPage extends StatefulWidget {
+  const CreatePartPage({
+    super.key,
+    required this.sorters,
+    required this.onCreated,
+  });
+
+  final List<dynamic> sorters;
+  final Function onCreated;
+
+  @override
+  CreatePartPageState createState() => CreatePartPageState();
+}
+
+class CreatePartPageState extends State<CreatePartPage> {
+  String uniqueId = "";
+  String? selectedSorter;
+  String quantityType = "pcs";
+  int? quantity;
+  bool enableQuantity = true;
+  bool autoGenerateId = true;
+  List<String> partTags = [];
+  String partLocation = "Unknown";
+  String? partNotes;
+  Map<String, dynamic> partAttrs = {};
+
+  late TextEditingController _partNameController;
+  late TextEditingController _quantityController;
+  late TextEditingController _priceController;
+  late TextEditingController _locationController;
+  late TextEditingController _notesController;
+  late TextEditingController _linkController;
+  late TextEditingController _uniqueIdController;
+
+  void _onTagDelete(int index) {
+    setState(() {
+      partTags.removeAt(index);
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    partAttrs["link"] = null;
+
+    _partNameController = TextEditingController();
+    _quantityController = TextEditingController();
+    _priceController = TextEditingController();
+    _locationController = TextEditingController();
+    _notesController = TextEditingController();
+    _linkController = TextEditingController();
+    _uniqueIdController = TextEditingController();
+
+    uniqueId = const Uuid().v4(); // Initial unique ID
+    _uniqueIdController = TextEditingController(text: uniqueId);
+  }
+
+  List<DropdownMenuItem<String>> buildLocationDropdownItems(
+      List<dynamic> locations) {
+    return locations.map<DropdownMenuItem<String>>((location) {
+      return DropdownMenuItem<String>(
+        value: location['id'].toString(),
+        child: Text(location['name'].toString()),
+      );
+    }).toList();
+  }
+
+  String? getUniqueIdValidationError() {
+    if (uniqueId.isEmpty) {
+      return "Value can't be empty";
+    }
+
+    RegExp regex = RegExp(r'[^\w-]');
+    if (regex.hasMatch(uniqueId)) {
+      return "Special characters are not allowed";
+    }
+    return null;
+  }
+
+  Future<void> _createPart() async {
+    if (autoGenerateId) {
+      uniqueId = const Uuid().v4();
+    }
+
+    final url = Uri.parse('http://localhost:8000/parts_individual/');
+    try {
+      final response = await http.post(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, dynamic>{
+          'name': _partNameController.text,
+          'id': uniqueId,
+          'sorter': selectedSorter,
+          'quantity': int.tryParse(_quantityController.text),
+          'quantity_type': quantityType,
+          'enable_quantity': enableQuantity,
+          'price': double.tryParse(_priceController.text),
+          'notes': _notesController.text,
+          'location': _locationController.text,
+          'tags': partTags.join(","),
+          'attrs': partAttrs
+        }),
+      );
+      if (response.statusCode == 201) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Part created successfully!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        Navigator.of(context).pop();
+        widget.onCreated();
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Part creation failed!',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(response.body),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Part creation failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(e.toString()),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Create Part"),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: ListView(
+          children: [
+            ValueListenableBuilder(
+              valueListenable: _partNameController,
+              builder: (context, TextEditingValue value, __) {
+                return TextField(
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    labelText: 'Name for Part',
+                    errorText: _partNameController.text.isEmpty
+                        ? "Value can't be empty"
+                        : null,
+                  ),
+                  controller: _partNameController,
+                );
+              },
+            ),
+            const SizedBox(height: 8.0),
+            Row(
+              children: [
+                Checkbox(
+                  value: autoGenerateId,
+                  onChanged: (value) {
+                    setState(() {
+                      autoGenerateId = value ?? false;
+                      if (autoGenerateId) {
+                        uniqueId = const Uuid().v4(); // Auto-generate unique ID
+                        _uniqueIdController.text = uniqueId;
+                      }
+                    });
+                  },
+                ),
+                const Text('Auto Generate Unique ID'),
+              ],
+            ),
+            TextField(
+              enabled: !autoGenerateId,
+              controller: _uniqueIdController,
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                labelText: 'Unique ID for location',
+                errorText: getUniqueIdValidationError(),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  uniqueId = value;
+                });
+              },
+            ),
+            const SizedBox(height: 8.0),
+            DropdownButtonFormField<String>(
+              value: selectedSorter,
+              onChanged: (value) {
+                setState(() {
+                  selectedSorter = value;
+                });
+              },
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                labelText: 'Select Sorter',
+                errorText:
+                    selectedSorter == null ? "Value can't be empty" : null,
+              ),
+              items: buildLocationDropdownItems(widget.sorters),
+            ),
+            const SizedBox(height: 8.0),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Theme.of(context).dividerColor),
+                borderRadius: BorderRadius.circular(4.0),
+              ),
+              padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+              child: TagEditor(
+                length: partTags.length,
+                delimiters: const [',', ' ', ';'],
+                hasAddButton: false,
+                inputDecoration: const InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'Add tags here...',
+                ),
+                onTagChanged: (newValue) {
+                  setState(() {
+                    partTags.add(newValue);
+                  });
+                },
+                tagBuilder: (context, index) => Padding(
+                  padding: const EdgeInsets.only(top: 7.0),
+                  child: Chip(
+                    label: Text(partTags[index]),
+                    onDeleted: () {
+                      _onTagDelete(index);
+                    },
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8.0),
+            Row(
+              children: [
+                Checkbox(
+                  value: enableQuantity,
+                  onChanged: (value) {
+                    setState(() {
+                      enableQuantity = value!;
+                    });
+                  },
+                ),
+                const Text("Enable Quantity Tracking")
+              ],
+            ),
+            const SizedBox(height: 8.0),
+            Row(
+              children: [
+                Expanded(
+                  child: ValueListenableBuilder(
+                    valueListenable: _quantityController,
+                    builder: (context, TextEditingValue value, __) {
+                      return TextField(
+                        decoration: InputDecoration(
+                          labelText: "Quantity",
+                          errorText: _quantityController.text.isEmpty
+                              ? "Value can't be empty"
+                              : null,
+                          border: const OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: <TextInputFormatter>[
+                          FilteringTextInputFormatter.digitsOnly
+                        ],
+                        controller: _quantityController,
+                        enabled: enableQuantity,
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8.0),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: quantityType,
+                    onChanged: enableQuantity
+                        ? (value) {
+                            setState(() {
+                              quantityType = value!;
+                            });
+                          }
+                        : null,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Quantity Type',
+                    ),
+                    items: const [
+                      DropdownMenuItem<String>(
+                        value: "pcs",
+                        child: Text("pcs"),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: "bags",
+                        child: Text("bags"),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: "box",
+                        child: Text("boxes"),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: "reels",
+                        child: Text("reels"),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: "m",
+                        child: Text("meters"),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: "cm",
+                        child: Text("centimeters"),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: "ft",
+                        child: Text("feet"),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8.0),
+            ValueListenableBuilder(
+              valueListenable: _priceController,
+              builder: (context, TextEditingValue value, __) {
+                return TextField(
+                  decoration: InputDecoration(
+                    prefixText: r"$",
+                    labelText: "Price per Unit",
+                    errorText: _priceController.text.isEmpty
+                        ? "Value can't be empty"
+                        : null,
+                    border: const OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: <TextInputFormatter>[
+                    FilteringTextInputFormatter.allow(RegExp(r"[0-9]|\."))
+                  ],
+                  controller: _priceController,
+                );
+              },
+            ),
+            const SizedBox(height: 8.0),
+            ValueListenableBuilder(
+              valueListenable: _locationController,
+              builder: (context, TextEditingValue value, __) {
+                return TextField(
+                  decoration: InputDecoration(
+                    labelText: "Location",
+                    errorText: _locationController.text.isEmpty
+                        ? "Value can't be empty"
+                        : null,
+                    border: const OutlineInputBorder(),
+                  ),
+                  controller: _locationController,
+                );
+              },
+            ),
+            const SizedBox(height: 8.0),
+            TextField(
+              decoration: const InputDecoration(
+                labelText: "Link",
+                border: OutlineInputBorder(),
+              ),
+              controller: _linkController,
+              onChanged: (value) {
+                partAttrs["link"] = value;
+              },
+            ),
+            const SizedBox(height: 8.0),
+            TextField(
+              decoration: const InputDecoration(
+                labelText: "Notes",
+                border: OutlineInputBorder(),
+              ),
+              controller: _notesController,
+              maxLines: 4,
+            ),
+            const SizedBox(height: 8.0),
+            ElevatedButton(
+              onPressed: () {
+                _createPart();
+              },
+              child: const Text('Create Part'),
             ),
           ],
         ),

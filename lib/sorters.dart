@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 
@@ -27,7 +28,6 @@ class CreateSorterPage extends StatefulWidget {
 class CreateSorterPageState extends State<CreateSorterPage> {
   String sorterName = "";
   bool autoGenerateId = true;
-  String uniqueId = '';
   String? selectedLocation;
   List<String> sorterTags = [];
 
@@ -42,8 +42,8 @@ class CreateSorterPageState extends State<CreateSorterPage> {
   @override
   void initState() {
     super.initState();
-    uniqueId = const Uuid().v4(); // Initial unique ID
-    _uniqueIdController = TextEditingController(text: uniqueId);
+    _uniqueIdController =
+        TextEditingController(text: const Uuid().v4().toString());
   }
 
   @override
@@ -63,12 +63,12 @@ class CreateSorterPageState extends State<CreateSorterPage> {
   }
 
   String? getUniqueIdValidationError() {
-    if (uniqueId.isEmpty) {
+    if (_uniqueIdController.text.isEmpty) {
       return "Value can't be empty";
     }
 
     RegExp regex = RegExp(r'[^\w-]');
-    if (regex.hasMatch(uniqueId)) {
+    if (regex.hasMatch(_uniqueIdController.text)) {
       return "Special characters are not allowed";
     }
     return null;
@@ -85,7 +85,7 @@ class CreateSorterPageState extends State<CreateSorterPage> {
         },
         body: jsonEncode(<String, dynamic>{
           'name': sorterName,
-          'id': uniqueId,
+          'id': _uniqueIdController.text,
           'location': selectedLocation,
           'icon': 'blank',
           'tags': sorterTags.join(","),
@@ -168,10 +168,10 @@ class CreateSorterPageState extends State<CreateSorterPage> {
                   value: autoGenerateId,
                   onChanged: (value) {
                     setState(() {
-                      autoGenerateId = value ?? false;
+                      autoGenerateId = value!;
                       if (autoGenerateId) {
-                        uniqueId = const Uuid().v4(); // Auto-generate unique ID
-                        _uniqueIdController.text = uniqueId;
+                        // Auto-generate unique ID
+                        _uniqueIdController.text = Uuid().v4().toString();
                       }
                     });
                   },
@@ -179,20 +179,19 @@ class CreateSorterPageState extends State<CreateSorterPage> {
                 const Text('Auto Generate Unique ID'),
               ],
             ),
-            TextField(
-              enabled: !autoGenerateId,
-              controller: _uniqueIdController,
-              decoration: InputDecoration(
-                border: const OutlineInputBorder(),
-                labelText: 'Unique ID for sorter',
-                errorText: getUniqueIdValidationError(),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  uniqueId = value;
-                });
-              },
-            ),
+            ValueListenableBuilder(
+                valueListenable: _uniqueIdController,
+                builder: (context, TextEditingValue value, __) {
+                  return TextField(
+                    enabled: !autoGenerateId,
+                    controller: _uniqueIdController,
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      labelText: 'Unique ID for sorter',
+                      errorText: getUniqueIdValidationError(),
+                    ),
+                  );
+                }),
             const SizedBox(height: 8.0),
             DropdownButtonFormField<String>(
               value: selectedLocation,
@@ -618,9 +617,8 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                   ],
                 ),
               ),
-              ListView.builder(
+              ColumnBuilder(
                 itemCount: filterParts(snapshot.data!, partsSearchQuery).length,
-                shrinkWrap: true,
                 itemBuilder: (context, index) {
                   return Padding(
                     padding: const EdgeInsets.all(4.0),
@@ -846,15 +844,45 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                     );
                   } else {
                     // One-column layout for smaller screens
-                    return ListView(
-                      children: [
-                        _buildInfoPane(),
-                        const SizedBox(
-                          height: 8.0,
+                    return Stack(children: [
+                      ListView(
+                        children: [
+                          _buildInfoPane(),
+                          const SizedBox(
+                            height: 8.0,
+                          ),
+                          _buildPartsPane()
+                        ],
+                      ),
+                      Align(
+                        alignment: Alignment.bottomRight,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: FloatingActionButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CreatePartPage(
+                                    sorters: widget.sorters,
+                                    onCreated: () {
+                                      setState(() {
+                                        parts = _fetchParts(widget.sorterId)
+                                            .then((value) {
+                                          setState(() {});
+                                          return value;
+                                        });
+                                      });
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                            child: const Icon(Icons.add),
+                          ),
                         ),
-                        _buildPartsPane()
-                      ],
-                    );
+                      ),
+                    ]);
                   }
                 },
               );

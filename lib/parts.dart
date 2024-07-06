@@ -497,7 +497,7 @@ class PartInfoPageState extends State<PartInfoPage> {
   String getPriceString(
       double partPrice, int partQuantity, bool enableQuantity) {
     return enableQuantity
-        ? "\$${(partPrice * partQuantity).toString()} (\$${partPrice.toString()} each)"
+        ? "\$${(partPrice * partQuantity).toStringAsFixed(2)} (\$${partPrice.toString()} each)"
         : "\$${partPrice.toString()} each";
   }
 
@@ -669,6 +669,7 @@ class PartInfoPageState extends State<PartInfoPage> {
           title: "Quantity",
           suffix: " $partQuantityType",
           enabled: partQuantityEnabled,
+          maxValue: 2147483647,
           onChanged: (value) {
             setState(() {
               partQuantity = value;

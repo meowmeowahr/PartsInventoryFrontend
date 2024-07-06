@@ -1,16 +1,17 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:intl/intl.dart';
 import 'package:image/image.dart' as img;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 import 'package:flutter/services.dart';
 import 'package:material_tag_editor/tag_editor.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_linkify/flutter_linkify.dart';
 
 String convertUtcToLocal(String utcTimestamp) {
   DateTime utcDateTime =
@@ -2958,6 +2959,7 @@ class PartInfoPageState extends State<PartInfoPage> {
   double partPrice = 0;
   String partNotes = "";
   String partLocation = "";
+  Map partAttrs = {};
   String partUpdatedTimestamp = "";
   String partCreatedTimestamp = "";
   Uint8List? partImage;
@@ -2991,6 +2993,7 @@ class PartInfoPageState extends State<PartInfoPage> {
         partPrice = data["price"].toDouble();
         partLocation = data["location"];
         partNotes = data["notes"];
+        partAttrs = data["attrs"];
         partUpdatedTimestamp = data["updated_at"];
         partCreatedTimestamp = data["created_at"];
 
@@ -3256,7 +3259,7 @@ class PartInfoPageState extends State<PartInfoPage> {
           'location': partLocation,
           'image': null,
           'tags': partTags?.join(","),
-          'attrs': {}
+          'attrs': partAttrs,
         }),
       );
       if (response.statusCode != 200) {
@@ -3374,6 +3377,20 @@ class PartInfoPageState extends State<PartInfoPage> {
     return enableQuantity
         ? "\$${(partPrice * partQuantity).toString()} (\$${partPrice.toString()} each)"
         : "\$${partPrice.toString()} each";
+  }
+
+  String? getLink(Map partAttrs) {
+    if (!partAttrs.containsKey("link")) {
+      // links is non-existent
+      return null;
+    }
+
+    if (partAttrs["link"].runtimeType != String) {
+      // links is empty, or not a String
+      return null;
+    }
+
+    return partAttrs["link"];
   }
 
   Widget _buildInfoPane() {
@@ -3580,6 +3597,31 @@ class PartInfoPageState extends State<PartInfoPage> {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Link",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              Flexible(
+                fit: FlexFit.tight,
+                flex: 3,
+                child: Linkify(
+                  text: getLink(partAttrs) != null
+                      ? getLink(partAttrs)!
+                      : "No Link",
+                  onOpen: (link) => launchUrl(Uri.parse(link.url)),
+                  softWrap: false,
+                  textAlign: TextAlign.end,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Divider(),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
             children: [
               const Text("Updated at",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -3707,12 +3749,14 @@ class ModifyPartPageState extends State<ModifyPartPage> {
   List<String> partTags = [];
   String partLocation = "Unknown";
   String? partNotes;
+  Map<String, dynamic> partAttrs = {};
 
   late TextEditingController _partNameController;
   late TextEditingController _quantityController;
   late TextEditingController _priceController;
   late TextEditingController _locationController;
   late TextEditingController _notesController;
+  late TextEditingController _linkController;
 
   void _onTagDetete(int index) {
     setState(() {
@@ -3730,6 +3774,11 @@ class ModifyPartPageState extends State<ModifyPartPage> {
     enableQuantity = widget.part["enable_quantity"].isOdd;
     partTags = widget.part['tags'].split(',');
     partTags.remove("");
+    partAttrs = widget.part["attrs"];
+
+    if (!partAttrs.containsKey("link")) {
+      partAttrs["link"] = null;
+    }
 
     _partNameController = TextEditingController(text: widget.part['name']);
     _quantityController =
@@ -3738,6 +3787,7 @@ class ModifyPartPageState extends State<ModifyPartPage> {
         TextEditingController(text: widget.part['price'].toString());
     _locationController = TextEditingController(text: widget.part['location']);
     _notesController = TextEditingController(text: widget.part['notes']);
+    _linkController = TextEditingController(text: widget.part['attrs']["link"]);
   }
 
   List<DropdownMenuItem<String>> buildLocationDropdownItems(
@@ -3782,7 +3832,7 @@ class ModifyPartPageState extends State<ModifyPartPage> {
           'notes': _notesController.text,
           'location': _locationController.text,
           'tags': partTags.join(","),
-          'attrs': {}
+          'attrs': partAttrs
         }),
       );
       if (response.statusCode == 200) {
@@ -4033,6 +4083,15 @@ class ModifyPartPageState extends State<ModifyPartPage> {
                     controller: _locationController,
                   );
                 }),
+            const SizedBox(height: 8.0),
+            TextField(
+              decoration: const InputDecoration(
+                  labelText: "Link", border: OutlineInputBorder()),
+              controller: _linkController,
+              onChanged: (value) {
+                partAttrs["link"] = value;
+              },
+            ),
             const SizedBox(height: 8.0),
             TextField(
               decoration: const InputDecoration(

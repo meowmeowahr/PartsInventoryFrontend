@@ -776,6 +776,9 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                   );
                 },
               ),
+              const SizedBox(
+                height: 88,
+              ),
             ],
           );
         } else {

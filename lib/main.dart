@@ -7,6 +7,7 @@ import 'package:sorter_frontend/widgets.dart';
 
 import 'sorters.dart';
 import 'locations.dart';
+import 'api.dart';
 
 void main() {
   runApp(const MyApp());
@@ -42,6 +43,7 @@ class MyHomePageState extends State<MyHomePage> {
   int? _selectedIndex = 0;
   List _locations = [];
   List _sorters = [];
+  List _parts = [];
 
   String sortersSortType = "creationTimeDesc";
   String sorterSearchQuery = "";
@@ -57,6 +59,12 @@ class MyHomePageState extends State<MyHomePage> {
     super.initState();
     _fetchLocations();
     _fetchSorters();
+    fetchAllParts().then((value) {
+      setState(() {
+        _parts = value;
+      });
+      return value;
+    });
   }
 
   Future<void> _fetchLocations() async {
@@ -272,6 +280,10 @@ class MyHomePageState extends State<MyHomePage> {
       onDestinationSelected: (int index) {
         _fetchSorters();
         _fetchLocations();
+        fetchAllParts().then((value) {
+          _parts = value;
+          return value;
+        });
         setState(() {
           _selectedIndex = index;
         });
@@ -319,7 +331,7 @@ class MyHomePageState extends State<MyHomePage> {
                     fontSize: 24, color: Theme.of(context).colorScheme.primary),
               ),
               Text(
-                "Items in Inventory: XXX",
+                "Items in Inventory: ${_parts.length}",
                 style: TextStyle(
                     fontSize: 26, color: Theme.of(context).colorScheme.primary),
               ),

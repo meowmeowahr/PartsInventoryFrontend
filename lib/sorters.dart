@@ -259,7 +259,7 @@ class CreateSorterPageState extends State<CreateSorterPage> {
             ),
             const Text(
                 "The optional identify API is used for part identification systems. This includes led-illuminated part bins and other similar systems. All API requests are called from the backend.\n"
-                "If the API is enabled, each part will have an identify button. Clicking this button will submit a GET request to http://[API ENDPOINT]/identify/[PART LOCATION]"),
+                "If the API is enabled, each part will have an identify button. Clicking this button will submit a GET request to [API ENDPOINT]/identify/[PART LOCATION]"),
             const SizedBox(height: 8.0),
             Row(
               children: [
@@ -983,8 +983,10 @@ class ModifySorterPageState extends State<ModifySorterPage> {
   late String uniqueId;
   String? selectedLocation;
   List<String> sorterTags = [];
+  bool enableIdentifyApi = false;
 
   late TextEditingController _sorterNameController;
+  late TextEditingController _identifyApiController;
 
   void _onTagDetete(int index) {
     setState(() {
@@ -1001,6 +1003,14 @@ class ModifySorterPageState extends State<ModifySorterPage> {
     sorterTags.remove("");
 
     _sorterNameController = TextEditingController(text: widget.sorter['name']);
+    _identifyApiController = TextEditingController(
+        text: widget.sorter['attrs'].containsKey("identify")
+            ? widget.sorter['attrs']['identify']
+            : "");
+
+    enableIdentifyApi = widget.sorter['attrs'].containsKey("identify")
+        ? widget.sorter['attrs']['identify'] != ""
+        : false;
   }
 
   List<DropdownMenuItem<String>> buildLocationDropdownItems(
@@ -1025,6 +1035,14 @@ class ModifySorterPageState extends State<ModifySorterPage> {
     return null;
   }
 
+  String? getIdentifyApiValidationError() {
+    if (_identifyApiController.text.isEmpty && enableIdentifyApi) {
+      return "Value can't be empty";
+    }
+
+    return null;
+  }
+
   Future<void> _modifySorter() async {
     final url = Uri.parse(
         'http://localhost:8000/sorters/$uniqueId'); // Replace with your API endpoint
@@ -1040,7 +1058,9 @@ class ModifySorterPageState extends State<ModifySorterPage> {
           'location': selectedLocation,
           'icon': 'blank',
           'tags': sorterTags.join(","),
-          'attrs': {}
+          'attrs': {
+            "identify": enableIdentifyApi ? _identifyApiController.text : ""
+          }
         }),
       );
       if (response.statusCode == 200) {
@@ -1168,6 +1188,42 @@ class ModifySorterPageState extends State<ModifySorterPage> {
                 ),
               ),
             ),
+            const Divider(),
+            const Text(
+              "Identify API",
+              textAlign: TextAlign.start,
+              style: TextStyle(fontSize: 24),
+            ),
+            const Text(
+                "The optional identify API is used for part identification systems. This includes led-illuminated part bins and other similar systems. All API requests are called from the backend.\n"
+                "If the API is enabled, each part will have an identify button. Clicking this button will submit a GET request to [API ENDPOINT]/identify/[PART LOCATION]"),
+            const SizedBox(height: 8.0),
+            Row(
+              children: [
+                Checkbox(
+                  value: enableIdentifyApi,
+                  onChanged: ((value) {
+                    setState(() {
+                      enableIdentifyApi = value!;
+                    });
+                  }),
+                ),
+                const Text("Enable Identify API"),
+              ],
+            ),
+            ValueListenableBuilder(
+                valueListenable: _identifyApiController,
+                builder: (context, TextEditingValue value, __) {
+                  return TextField(
+                    enabled: enableIdentifyApi,
+                    controller: _identifyApiController,
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      labelText: 'API Endpoint',
+                      errorText: getIdentifyApiValidationError(),
+                    ),
+                  );
+                }),
             const SizedBox(height: 8.0),
             ElevatedButton(
               onPressed: () {

@@ -82,6 +82,8 @@ class PartInfoPageState extends State<PartInfoPage> {
   String partNotes = "";
   String partLocation = "";
   Map partAttrs = {};
+  bool partHasIdentify = false;
+  String? partIdentifyApi;
   String partUpdatedTimestamp = "";
   String partCreatedTimestamp = "";
   Uint8List? partImage;
@@ -123,6 +125,13 @@ class PartInfoPageState extends State<PartInfoPage> {
           partImage = base64Decode(data["image"]);
         } else {
           partImage = null;
+        }
+
+        final sorterAttrs = getSorterAttrs(data["sorter"], widget.sorters);
+        if (sorterAttrs.containsKey("identify") &&
+            sorterAttrs["identify"] != "") {
+          partHasIdentify = true;
+          partIdentifyApi = sorterAttrs["identify"];
         }
       });
       return data;
@@ -174,6 +183,40 @@ class PartInfoPageState extends State<PartInfoPage> {
         ),
       );
       return null;
+    }
+  }
+
+  Map getSorterAttrs(String sorterId, List<dynamic> sorters) {
+    try {
+      final sorter = sorters.firstWhere(
+        (location) => location['id'].toString() == sorterId,
+        orElse: () => null,
+      );
+      if (sorter != null) {
+        return sorter['attrs']; // Assuming the location contains a 'name' field
+      } else {
+        throw Exception('Sorter not found');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Failed to load sorter!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                e.toString(),
+              ),
+            ],
+          ),
+        ),
+      );
+      return {};
     }
   }
 
@@ -463,6 +506,59 @@ class PartInfoPageState extends State<PartInfoPage> {
     }
   }
 
+  Future<void> identifyPart() async {
+    final url = Uri.parse('http://localhost:8000/part_identify/');
+    try {
+      final response = await http.post(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, dynamic>{
+          'api': partIdentifyApi!,
+          'location': partLocation
+        }),
+      );
+      if (response.statusCode != 200) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Part identification failed!',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(response.body),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Part identification failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(e.toString()),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
   Future<Object> _showDeleteConfirmation(BuildContext context) async {
     return showDialog<bool>(
       context: context,
@@ -663,6 +759,13 @@ class PartInfoPageState extends State<PartInfoPage> {
                   )
           ],
         ),
+        if (partHasIdentify) const SizedBox(height: 8.0),
+        if (partHasIdentify)
+          ElevatedButton.icon(
+            onPressed: identifyPart,
+            icon: const Icon(Icons.lightbulb_rounded),
+            label: const Text("Identify"),
+          ),
         const Divider(),
         NumberSpinner(
           value: partQuantity,

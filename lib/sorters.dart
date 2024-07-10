@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:responsive_grid/responsive_grid.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:flutter/material.dart';
@@ -332,6 +333,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
   String? sorterLocation;
   String? sorterLocationName;
   List<String>? sorterTags;
+  Map? sorterAttrs;
 
   String partsSearchQuery = "";
   String partsSortType = "";
@@ -355,6 +357,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
         _pageTitle = data["name"];
         sorterName = data["name"];
         sorterId = data["id"];
+        sorterAttrs = data["attrs"];
         sorterLocation = data["location"];
         sorterTags = data["tags"].split(",");
         sorterTags?.remove("");
@@ -614,6 +617,59 @@ class SorterInfoPageState extends State<SorterInfoPage> {
     );
   }
 
+  Future<void> identifyPart(String partIdentifyApi, String partLocation) async {
+    final url = Uri.parse('http://localhost:8000/part_identify/');
+    try {
+      final response = await http.post(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, dynamic>{
+          'api': partIdentifyApi,
+          'location': partLocation
+        }),
+      );
+      if (response.statusCode != 200) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Part identification failed!',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(response.body),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Part identification failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(e.toString()),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
   Widget _buildPartsPane() {
     return FutureBuilder<List<dynamic>>(
       future: parts,
@@ -681,9 +737,11 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                   ],
                 ),
               ),
-              ColumnBuilder(
-                itemCount: filterParts(snapshot.data!, partsSearchQuery).length,
-                itemBuilder: (context, index) {
+              ResponsiveStaggeredGridList(
+                desiredItemWidth: 320,
+                children: List.generate(
+                    filterParts(snapshot.data!, partsSearchQuery).length,
+                    (index) {
                   return Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: ElevatedButton(
@@ -729,12 +787,28 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                         padding: const EdgeInsets.all(8.0),
                         child: Row(
                           children: [
-                            const Icon(
-                              // String2Icon.getIconDataFromString(
-                              //     _sorters[index]['icon']),
-                              Icons.category_rounded,
-                              size: 64,
-                            ),
+                            if (![null, ""].contains(sorterAttrs?["identify"]))
+                              IconButton.filledTonal(
+                                onPressed: () {
+                                  identifyPart(
+                                      sorterAttrs?["identify"],
+                                      _sortParts(
+                                          filterParts(
+                                              snapshot.data!, partsSearchQuery),
+                                          partsSortType)[index]['location']);
+                                },
+                                icon: const Icon(
+                                  Icons.lightbulb,
+                                  size: 64,
+                                ),
+                              ),
+                            if ([null, ""].contains(sorterAttrs?["identify"]))
+                              const Icon(
+                                // String2Icon.getIconDataFromString(
+                                //     _sorters[index]['icon']),
+                                Icons.category_rounded,
+                                size: 64,
+                              ),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -822,7 +896,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                       ),
                     ),
                   );
-                },
+                }).toList(),
               ),
               const SizedBox(
                 height: 88,

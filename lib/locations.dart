@@ -804,7 +804,7 @@ class LocationInfoPageState extends State<LocationInfoPage> {
                     );
                   } else {
                     // One-column layout for smaller screens
-                    return Column(
+                    return ListView(
                       children: [
                         _buildInfoPane(),
                         const SizedBox(

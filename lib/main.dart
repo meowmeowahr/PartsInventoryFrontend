@@ -253,41 +253,22 @@ class MyHomePageState extends State<MyHomePage> {
     return sorters.where((sorter) => sorter['location'] == locationId).length;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Part Sorter"),
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return Row(
-            children: <Widget>[
-              _buildNavigationRail(context),
-              Expanded(
-                child: Center(child: _buildContent()),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+  void _onItemTapped(int index) {
+    _fetchSorters();
+    _fetchLocations();
+    fetchAllParts().then((value) {
+      _parts = value;
+      return value;
+    });
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   Widget _buildNavigationRail(BuildContext context) {
     return NavigationRail(
       selectedIndex: _selectedIndex!,
-      onDestinationSelected: (int index) {
-        _fetchSorters();
-        _fetchLocations();
-        fetchAllParts().then((value) {
-          _parts = value;
-          return value;
-        });
-        setState(() {
-          _selectedIndex = index;
-        });
-      },
+      onDestinationSelected: _onItemTapped,
       labelType: NavigationRailLabelType.selected,
       destinations: const [
         NavigationRailDestination(
@@ -305,7 +286,71 @@ class MyHomePageState extends State<MyHomePage> {
           selectedIcon: Icon(Icons.inventory),
           label: Text('Sorters'),
         ),
+        NavigationRailDestination(
+          icon: Icon(Icons.settings_outlined),
+          selectedIcon: Icon(Icons.settings),
+          label: Text('Settings'),
+        ),
       ],
+    );
+  }
+
+  Widget _buildBottomNavigationBar(BuildContext context) {
+    return NavigationBar(
+      selectedIndex: _selectedIndex!,
+      onDestinationSelected: _onItemTapped,
+      destinations: const [
+        NavigationDestination(
+          icon: Icon(Icons.home_outlined),
+          selectedIcon: Icon(Icons.home),
+          label: 'Home',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.room_outlined),
+          selectedIcon: Icon(Icons.room),
+          label: 'Locations',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.inventory_2_outlined),
+          selectedIcon: Icon(Icons.inventory),
+          label: 'Sorters',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.settings_outlined),
+          selectedIcon: Icon(Icons.settings),
+          label: 'Settings',
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Part Sorter"),
+      ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth < 600) {
+            // Use BottomNavigationBar for small screens
+            return Scaffold(
+              body: Center(child: _buildContent()),
+              bottomNavigationBar: _buildBottomNavigationBar(context),
+            );
+          } else {
+            // Use NavigationRail for larger screens
+            return Row(
+              children: <Widget>[
+                _buildNavigationRail(context),
+                Expanded(
+                  child: Center(child: _buildContent()),
+                ),
+              ],
+            );
+          }
+        },
+      ),
     );
   }
 
@@ -343,52 +388,52 @@ class MyHomePageState extends State<MyHomePage> {
           children: [
             Column(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: CustomSearchBar(
-                        onChanged: (value) {
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: CustomSearchBar(
+                          onChanged: (value) {
+                            setState(() {
+                              locationsSearchQuery = value;
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 4.0,
+                      ),
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.sort),
+                        tooltip: "Sort",
+                        onSelected: (String value) {
                           setState(() {
-                            locationsSearchQuery = value;
+                            locationsSortType = value;
                           });
                         },
+                        itemBuilder: (BuildContext context) =>
+                            <PopupMenuEntry<String>>[
+                          const PopupMenuItem<String>(
+                            value: 'creationTimeDesc',
+                            child: Text('Creation Time Descending'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'creationTimeAsc',
+                            child: Text('Creation Time Ascending'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'nameAsc',
+                            child: Text('Name Ascending'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'nameDesc',
+                            child: Text('Name Descending'),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(
-                      width: 4.0,
-                    ),
-                    PopupMenuButton<String>(
-                      icon: const Icon(Icons.sort),
-                      tooltip: "Sort",
-                      onSelected: (String value) {
-                        setState(() {
-                          locationsSortType = value;
-                        });
-                      },
-                      itemBuilder: (BuildContext context) =>
-                          <PopupMenuEntry<String>>[
-                        const PopupMenuItem<String>(
-                          value: 'creationTimeDesc',
-                          child: Text('Creation Time Descending'),
-                        ),
-                        const PopupMenuItem<String>(
-                          value: 'creationTimeAsc',
-                          child: Text('Creation Time Ascending'),
-                        ),
-                        const PopupMenuItem<String>(
-                          value: 'nameAsc',
-                          child: Text('Name Ascending'),
-                        ),
-                        const PopupMenuItem<String>(
-                          value: 'nameDesc',
-                          child: Text('Name Descending'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(
-                      width: 4.0,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 8.0),
                 Expanded(
@@ -560,52 +605,52 @@ class MyHomePageState extends State<MyHomePage> {
           children: [
             Column(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: CustomSearchBar(
-                        onChanged: (value) {
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: CustomSearchBar(
+                          onChanged: (value) {
+                            setState(() {
+                              sorterSearchQuery = value;
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 4.0,
+                      ),
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.sort),
+                        tooltip: "Sort",
+                        onSelected: (String value) {
                           setState(() {
-                            sorterSearchQuery = value;
+                            sortersSortType = value;
                           });
                         },
+                        itemBuilder: (BuildContext context) =>
+                            <PopupMenuEntry<String>>[
+                          const PopupMenuItem<String>(
+                            value: 'creationTimeDesc',
+                            child: Text('Creation Time Descending'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'creationTimeAsc',
+                            child: Text('Creation Time Ascending'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'nameAsc',
+                            child: Text('Name Ascending'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'nameDesc',
+                            child: Text('Name Descending'),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(
-                      width: 4.0,
-                    ),
-                    PopupMenuButton<String>(
-                      icon: const Icon(Icons.sort),
-                      tooltip: "Sort",
-                      onSelected: (String value) {
-                        setState(() {
-                          sortersSortType = value;
-                        });
-                      },
-                      itemBuilder: (BuildContext context) =>
-                          <PopupMenuEntry<String>>[
-                        const PopupMenuItem<String>(
-                          value: 'creationTimeDesc',
-                          child: Text('Creation Time Descending'),
-                        ),
-                        const PopupMenuItem<String>(
-                          value: 'creationTimeAsc',
-                          child: Text('Creation Time Ascending'),
-                        ),
-                        const PopupMenuItem<String>(
-                          value: 'nameAsc',
-                          child: Text('Name Ascending'),
-                        ),
-                        const PopupMenuItem<String>(
-                          value: 'nameDesc',
-                          child: Text('Name Descending'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(
-                      width: 4.0,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 8.0),
                 Expanded(

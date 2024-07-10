@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 
@@ -30,8 +29,10 @@ class CreateSorterPageState extends State<CreateSorterPage> {
   bool autoGenerateId = true;
   String? selectedLocation;
   List<String> sorterTags = [];
+  bool enableIdentifyApi = false;
 
   late TextEditingController _uniqueIdController;
+  late TextEditingController _identifyApiController;
 
   void _onTagDetete(int index) {
     setState(() {
@@ -44,6 +45,7 @@ class CreateSorterPageState extends State<CreateSorterPage> {
     super.initState();
     _uniqueIdController =
         TextEditingController(text: const Uuid().v4().toString());
+    _identifyApiController = TextEditingController(text: "localhost:4300");
   }
 
   @override
@@ -74,6 +76,14 @@ class CreateSorterPageState extends State<CreateSorterPage> {
     return null;
   }
 
+  String? getIdentifyApiValidationError() {
+    if (_identifyApiController.text.isEmpty && enableIdentifyApi) {
+      return "Value can't be empty";
+    }
+
+    return null;
+  }
+
   Future<void> _createSorter() async {
     final url = Uri.parse(
         'http://localhost:8000/sorters/'); // Replace with your API endpoint
@@ -89,7 +99,9 @@ class CreateSorterPageState extends State<CreateSorterPage> {
           'location': selectedLocation,
           'icon': 'blank',
           'tags': sorterTags.join(","),
-          'attrs': {}
+          'attrs': {
+            "identity": enableIdentifyApi ? _identifyApiController.text : ""
+          }
         }),
       );
       if (response.statusCode == 201) {
@@ -147,7 +159,7 @@ class CreateSorterPageState extends State<CreateSorterPage> {
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
               decoration: InputDecoration(
@@ -239,6 +251,42 @@ class CreateSorterPageState extends State<CreateSorterPage> {
                 ),
               ),
             ),
+            const Divider(),
+            const Text(
+              "Identify API",
+              textAlign: TextAlign.start,
+              style: TextStyle(fontSize: 24),
+            ),
+            const Text(
+                "The optional identify API is used for part identification systems. This includes led-illuminated part bins and other similar systems. All API requests are called from the backend.\n"
+                "If the API is enabled, each part will have an identify button. Clicking this button will submit a GET request to http://[API ENDPOINT]/identify/[PART LOCATION]"),
+            const SizedBox(height: 8.0),
+            Row(
+              children: [
+                Checkbox(
+                  value: enableIdentifyApi,
+                  onChanged: ((value) {
+                    setState(() {
+                      enableIdentifyApi = value!;
+                    });
+                  }),
+                ),
+                const Text("Enable Identify API"),
+              ],
+            ),
+            ValueListenableBuilder(
+                valueListenable: _identifyApiController,
+                builder: (context, TextEditingValue value, __) {
+                  return TextField(
+                    enabled: enableIdentifyApi,
+                    controller: _identifyApiController,
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      labelText: 'API Endpoint',
+                      errorText: getIdentifyApiValidationError(),
+                    ),
+                  );
+                }),
             const SizedBox(height: 8.0),
             ElevatedButton(
               onPressed: () {

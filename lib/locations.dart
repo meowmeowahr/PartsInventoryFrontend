@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
 import 'package:flutter/material.dart';
@@ -14,10 +15,12 @@ import 'widgets.dart';
 class CreateLocationPage extends StatefulWidget {
   const CreateLocationPage({
     super.key,
+    required this.apiBaseAddress,
     required this.onCreated,
   });
 
   final Function onCreated;
+  final String apiBaseAddress;
 
   @override
   CreateLocationPageState createState() => CreateLocationPageState();
@@ -74,8 +77,8 @@ class CreateLocationPageState extends State<CreateLocationPage> {
   }
 
   Future<void> _createLocation() async {
-    final url = Uri.parse(
-        'http://localhost:8000/locations/'); // Replace with your API endpoint
+    final url = Uri.parse(p.join(
+        widget.apiBaseAddress, "locations")); // Replace with your API endpoint
     try {
       final response = await http.post(
         url,
@@ -237,6 +240,8 @@ class CreateLocationPageState extends State<CreateLocationPage> {
 }
 
 class LocationInfoPage extends StatefulWidget {
+  final String apiBaseAddress;
+
   final String locationId;
   final List<dynamic> locations;
 
@@ -245,6 +250,7 @@ class LocationInfoPage extends StatefulWidget {
 
   const LocationInfoPage({
     super.key,
+    required this.apiBaseAddress,
     required this.locationId,
     required this.onDelete,
     required this.onModify,
@@ -275,8 +281,8 @@ class LocationInfoPageState extends State<LocationInfoPage> {
   }
 
   Future<Map<String, dynamic>> _fetchLocationInfo() async {
-    final url =
-        Uri.parse('http://localhost:8000/locations/${widget.locationId}');
+    final url = Uri.parse(
+        p.join(widget.apiBaseAddress, "locations/${widget.locationId}"));
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -295,8 +301,8 @@ class LocationInfoPageState extends State<LocationInfoPage> {
   }
 
   Future<void> deleteLocation(String locationId) async {
-    final url = Uri.parse(
-        'http://localhost:8000/locations/$locationId'); // Replace with your API endpoint
+    final url = Uri.parse(p.join(widget.apiBaseAddress,
+        "locations/$locationId")); // Replace with your API endpoint
 
     try {
       final response = await http.delete(url);
@@ -464,8 +470,8 @@ class LocationInfoPageState extends State<LocationInfoPage> {
   }
 
   Future<void> _fetchSorters() async {
-    final url = Uri.parse(
-        'http://localhost:8000/sorters'); // Replace with your API endpoint
+    final url = Uri.parse(p.join(
+        widget.apiBaseAddress, "sorters")); // Replace with your API endpoint
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -605,6 +611,7 @@ class LocationInfoPageState extends State<LocationInfoPage> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => SorterInfoPage(
+                        apiBaseAddress: widget.apiBaseAddress,
                         sorterId: _sortSorters(
                             filterSorters(
                                 filterSortersByLocationId(
@@ -747,6 +754,7 @@ class LocationInfoPageState extends State<LocationInfoPage> {
                         return const Center(child: CircularProgressIndicator());
                       } else if (snapshot.hasData) {
                         return ModifyLocationPage(
+                            apiBaseAddress: widget.apiBaseAddress,
                             location: snapshot.data!,
                             onModified: () {
                               widget.onModify();
@@ -829,9 +837,12 @@ class LocationInfoPageState extends State<LocationInfoPage> {
 class ModifyLocationPage extends StatefulWidget {
   const ModifyLocationPage({
     super.key,
+    required this.apiBaseAddress,
     required this.location,
     required this.onModified,
   });
+
+  final String apiBaseAddress;
 
   final Map<String, dynamic> location;
   final Function onModified;
@@ -893,8 +904,7 @@ class ModifyLocationPageState extends State<ModifyLocationPage> {
   }
 
   Future<void> _modifyLocation() async {
-    final url = Uri.parse(
-        'http://localhost:8000/locations/$uniqueId'); // Replace with your API endpoint
+    final url = Uri.parse(p.join(widget.apiBaseAddress, "locations/$uniqueId"));
     try {
       final response = await http.put(
         url,

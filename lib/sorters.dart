@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
 import 'package:responsive_grid/responsive_grid.dart';
 import 'package:uuid/uuid.dart';
 
@@ -14,9 +15,12 @@ import 'widgets.dart';
 class CreateSorterPage extends StatefulWidget {
   const CreateSorterPage({
     super.key,
+    required this.apiBaseAddress,
     required this.locations,
     required this.onCreated,
   });
+
+  final String apiBaseAddress;
 
   final List<dynamic> locations;
   final Function onCreated;
@@ -86,8 +90,8 @@ class CreateSorterPageState extends State<CreateSorterPage> {
   }
 
   Future<void> _createSorter() async {
-    final url = Uri.parse(
-        'http://localhost:8000/sorters/'); // Replace with your API endpoint
+    final url = Uri.parse(p.join(
+        widget.apiBaseAddress, "sorters")); // Replace with your API endpoint
     try {
       final response = await http.post(
         url,
@@ -303,6 +307,8 @@ class CreateSorterPageState extends State<CreateSorterPage> {
 }
 
 class SorterInfoPage extends StatefulWidget {
+  final String apiBaseAddress;
+
   final String sorterId;
   final List<dynamic> locations;
   final List<dynamic> sorters;
@@ -312,6 +318,7 @@ class SorterInfoPage extends StatefulWidget {
 
   const SorterInfoPage({
     super.key,
+    required this.apiBaseAddress,
     required this.sorterId,
     required this.locations,
     required this.sorters,
@@ -348,7 +355,8 @@ class SorterInfoPageState extends State<SorterInfoPage> {
   }
 
   Future<Map<String, dynamic>> _fetchSorterInfo() async {
-    final url = Uri.parse('http://localhost:8000/sorters/${widget.sorterId}');
+    final url =
+        Uri.parse(p.join(widget.apiBaseAddress, "sorters/${widget.sorterId}"));
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
@@ -370,8 +378,8 @@ class SorterInfoPageState extends State<SorterInfoPage> {
   }
 
   Future<List> _fetchParts(String sorter) async {
-    final url = Uri.parse(
-        'http://localhost:8000/parts/$sorter'); // Replace with your API endpoint
+    final url = Uri.parse(p.join(widget.apiBaseAddress,
+        "parts/$sorter")); // Replace with your API endpoint
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -446,8 +454,8 @@ class SorterInfoPageState extends State<SorterInfoPage> {
   }
 
   Future<void> deleteSorter(String sorterId) async {
-    final url = Uri.parse(
-        'http://localhost:8000/sorters/$sorterId'); // Replace with your API endpoint
+    final url = Uri.parse(p.join(widget.apiBaseAddress,
+        "sorters/$sorterId")); // Replace with your API endpoint
 
     try {
       final response = await http.delete(url);
@@ -618,7 +626,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
   }
 
   Future<void> identifyPart(String partIdentifyApi, String partLocation) async {
-    final url = Uri.parse('http://localhost:8000/part_identify/');
+    final url = Uri.parse(p.join(widget.apiBaseAddress, "part_identify/"));
     try {
       final response = await http.post(
         url,
@@ -928,6 +936,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                         return const Center(child: CircularProgressIndicator());
                       } else if (snapshot.hasData) {
                         return ModifySorterPage(
+                            apiBaseAddress: widget.apiBaseAddress,
                             sorter: snapshot.data!,
                             locations: widget.locations,
                             onModified: () {
@@ -1040,10 +1049,13 @@ class SorterInfoPageState extends State<SorterInfoPage> {
 class ModifySorterPage extends StatefulWidget {
   const ModifySorterPage({
     super.key,
+    required this.apiBaseAddress,
     required this.sorter,
     required this.locations,
     required this.onModified,
   });
+
+  final String apiBaseAddress;
 
   final Map<String, dynamic> sorter;
   final List<dynamic> locations;
@@ -1118,8 +1130,7 @@ class ModifySorterPageState extends State<ModifySorterPage> {
   }
 
   Future<void> _modifySorter() async {
-    final url = Uri.parse(
-        'http://localhost:8000/sorters/$uniqueId'); // Replace with your API endpoint
+    final url = Uri.parse(p.join(widget.apiBaseAddress, "sorters/$uniqueId"));
     try {
       final response = await http.put(
         url,

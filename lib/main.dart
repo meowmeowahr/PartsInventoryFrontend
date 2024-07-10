@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sorter_frontend/widgets.dart';
 
 import 'sorters.dart';
@@ -10,16 +13,80 @@ import 'locations.dart';
 import 'api.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => SettingsProvider(),
+      child: const MyApp(),
+    ),
+  );
+}
+
+enum ThemeModeOption { system, light, dark }
+
+class SettingsProvider extends ChangeNotifier {
+  ThemeModeOption _themeModeOption = ThemeModeOption.system;
+  String _apiBaseUrl = "";
+
+  SettingsProvider() {
+    _loadPreferences();
+  }
+
+  ThemeModeOption get themeModeOption => _themeModeOption;
+  String get apiBaseUrl => _apiBaseUrl;
+
+  ThemeMode get themeMode {
+    switch (_themeModeOption) {
+      case ThemeModeOption.light:
+        return ThemeMode.light;
+      case ThemeModeOption.dark:
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.system;
+    }
+  }
+
+  void _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    _themeModeOption = ThemeModeOption.values[prefs.getInt('themeMode') ?? 0];
+    _apiBaseUrl = prefs.getString('apiBaseUrl') ?? '';
+    notifyListeners();
+  }
+
+  void updateThemeMode(ThemeModeOption option) async {
+    _themeModeOption = option;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('themeMode', option.index);
+    notifyListeners();
+  }
+
+  void updateApiBaseUrl(String url) {
+    _apiBaseUrl = url;
+    _savePreference('apiBaseUrl', url);
+  }
+
+  Future<void> _savePreference(String key, dynamic value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (value is int) {
+      prefs.setInt(key, value);
+    } else if (value is bool) {
+      prefs.setBool(key, value);
+    } else if (value is String) {
+      prefs.setString(key, value);
+    }
+  }
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<SettingsProvider>(context);
     return MaterialApp(
       title: 'Parts Sorter',
+      themeMode: themeProvider.themeMode,
       theme: ThemeData(
         primarySwatch: Colors.blue,
         brightness: Brightness.light, // Default to light theme
@@ -40,6 +107,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class MyHomePageState extends State<MyHomePage> {
+  String apiBaseAddress = "http://localhost:8000/";
+
   int? _selectedIndex = 0;
   List _locations = [];
   List _sorters = [];
@@ -57,6 +126,14 @@ class MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final settings = Provider.of<SettingsProvider>(context);
+    apiBaseAddress = settings.apiBaseUrl;
+
     _fetchLocations();
     _fetchSorters();
     fetchAllParts().then((value) {
@@ -69,7 +146,7 @@ class MyHomePageState extends State<MyHomePage> {
 
   Future<void> _fetchLocations() async {
     final url = Uri.parse(
-        'http://localhost:8000/locations'); // Replace with your API endpoint
+        p.join(apiBaseAddress, "locations")); // Replace with your API endpoint
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -105,7 +182,7 @@ class MyHomePageState extends State<MyHomePage> {
 
   Future<void> _fetchSorters() async {
     final url = Uri.parse(
-        'http://localhost:8000/sorters'); // Replace with your API endpoint
+        p.join(apiBaseAddress, "sorters")); // Replace with your API endpoint
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -355,7 +432,10 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _buildContent() {
-    // Simulate content based on selected index
+    final settings = Provider.of<SettingsProvider>(context);
+    final TextEditingController _apiBaseUrlController =
+        TextEditingController(text: settings.apiBaseUrl);
+
     switch (_selectedIndex) {
       case 0:
         return SingleChildScrollView(
@@ -449,6 +529,7 @@ class MyHomePageState extends State<MyHomePage> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => LocationInfoPage(
+                                  apiBaseAddress: apiBaseAddress,
                                   locationId: _sortLocations(
                                       filterLocations(
                                           _locations, locationsSearchQuery),
@@ -586,6 +667,7 @@ class MyHomePageState extends State<MyHomePage> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => CreateLocationPage(
+                            apiBaseAddress: apiBaseAddress,
                             onCreated: () {
                               setState(() {
                                 _fetchLocations();
@@ -666,6 +748,7 @@ class MyHomePageState extends State<MyHomePage> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => SorterInfoPage(
+                                  apiBaseAddress: apiBaseAddress,
                                   sorterId: _sortSorters(
                                       filterSorters(
                                           _sorters, sorterSearchQuery),
@@ -800,6 +883,7 @@ class MyHomePageState extends State<MyHomePage> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => CreateSorterPage(
+                          apiBaseAddress: apiBaseAddress,
                           locations: _locations,
                           onCreated: () {
                             setState(() {
@@ -815,6 +899,62 @@ class MyHomePageState extends State<MyHomePage> {
               ),
             ),
           ],
+        );
+      case 3:
+        return Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: ListView(
+            children: [
+              const Text(
+                'Theme',
+                style: TextStyle(fontSize: 22),
+              ),
+              const SizedBox(height: 8),
+              SegmentedButton<ThemeModeOption>(
+                segments: const [
+                  ButtonSegment(
+                    value: ThemeModeOption.system,
+                    label: Text('System'),
+                    icon: Icon(Icons.auto_awesome),
+                  ),
+                  ButtonSegment(
+                    value: ThemeModeOption.light,
+                    label: Text('Light'),
+                    icon: Icon(Icons.light_mode),
+                  ),
+                  ButtonSegment(
+                    value: ThemeModeOption.dark,
+                    label: Text('Dark'),
+                    icon: Icon(Icons.mode_night),
+                  ),
+                ],
+                selected: <ThemeModeOption>{settings.themeModeOption},
+                onSelectionChanged: (Set<ThemeModeOption> newSelection) {
+                  if (newSelection.isNotEmpty) {
+                    settings.updateThemeMode(newSelection.first);
+                  }
+                },
+              ),
+              const Divider(),
+              const Text(
+                'API Settings',
+                style: TextStyle(fontSize: 22),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _apiBaseUrlController,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'API Base URL',
+                ),
+                onChanged: (value) {
+                  settings.updateApiBaseUrl(value);
+                  apiBaseAddress = value;
+                },
+              ),
+              const Divider(),
+            ],
+          ),
         );
       default:
         return const Text('Default Area');

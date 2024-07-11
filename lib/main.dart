@@ -126,14 +126,6 @@ class MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final settings = Provider.of<SettingsProvider>(context);
-    apiBaseAddress = settings.apiBaseUrl;
-
     _fetchLocations();
     _fetchSorters();
     fetchAllParts().catchError((e) {
@@ -160,6 +152,13 @@ class MyHomePageState extends State<MyHomePage> {
       });
       return value;
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final settings = Provider.of<SettingsProvider>(context);
+    apiBaseAddress = settings.apiBaseUrl;
   }
 
   Future<void> _fetchLocations() async {

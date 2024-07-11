@@ -136,7 +136,25 @@ class MyHomePageState extends State<MyHomePage> {
 
     _fetchLocations();
     _fetchSorters();
-    fetchAllParts().then((value) {
+    fetchAllParts().catchError((e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            children: [
+              const Text(
+                'All parts fetch failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                e.toString(),
+              ),
+            ],
+          ),
+        ),
+      );
+      return [];
+    }).then((value) {
       setState(() {
         _parts = value;
       });
@@ -331,12 +349,32 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   void _onItemTapped(int index) {
-    _fetchSorters();
-    _fetchLocations();
-    fetchAllParts().then((value) {
-      _parts = value;
-      return value;
-    });
+    if (index < 3) {
+      _fetchSorters();
+      _fetchLocations();
+      fetchAllParts().catchError((e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            content: Column(
+              children: [
+                const Text(
+                  'All parts fetch failed!',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  e.toString(),
+                ),
+              ],
+            ),
+          ),
+        );
+        return [];
+      }).then((value) {
+        _parts = value;
+        return value;
+      });
+    }
     setState(() {
       _selectedIndex = index;
     });

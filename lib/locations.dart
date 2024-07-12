@@ -78,7 +78,7 @@ class CreateLocationPageState extends State<CreateLocationPage> {
 
   Future<void> _createLocation() async {
     final url = Uri.parse(p.join(
-        widget.apiBaseAddress, "locations")); // Replace with your API endpoint
+        widget.apiBaseAddress, "locations/")); // Replace with your API endpoint
     try {
       final response = await http.post(
         url,

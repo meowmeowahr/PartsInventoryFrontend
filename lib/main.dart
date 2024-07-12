@@ -300,6 +300,22 @@ class MyHomePageState extends State<MyHomePage> {
     return sorters.where((sorter) => sorter['location'] == locationId).length;
   }
 
+  int getTotalQuantity() {
+    int quantity = 0;
+    for (final part in _parts) {
+      quantity += part["quantity"] as int;
+    }
+    return quantity;
+  }
+
+  double getTotalValue() {
+    double value = 0;
+    for (final part in _parts) {
+      value += part["price"] * part["quantity"] as double;
+    }
+    return value;
+  }
+
   void _onItemTapped(int index) {
     if (index < 3) {
       _fetchSorters();
@@ -447,6 +463,16 @@ class MyHomePageState extends State<MyHomePage> {
               ),
               Text(
                 "Items in Inventory: ${_parts.length}",
+                style: TextStyle(
+                    fontSize: 26, color: Theme.of(context).colorScheme.primary),
+              ),
+              Text(
+                "Total Inventory Quantity: ${getTotalQuantity()}",
+                style: TextStyle(
+                    fontSize: 26, color: Theme.of(context).colorScheme.primary),
+              ),
+              Text(
+                "Total Inventory Value: \$${getTotalValue()}",
                 style: TextStyle(
                     fontSize: 26, color: Theme.of(context).colorScheme.primary),
               ),

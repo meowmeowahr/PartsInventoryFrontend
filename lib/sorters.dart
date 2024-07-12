@@ -797,18 +797,21 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                         child: Row(
                           children: [
                             if (![null, ""].contains(sorterAttrs?["identify"]))
-                              IconButton.filledTonal(
-                                onPressed: () {
-                                  identifyPart(
-                                      sorterAttrs?["identify"],
-                                      _sortParts(
-                                          filterParts(
-                                              snapshot.data!, partsSearchQuery),
-                                          partsSortType)[index]['location']);
-                                },
-                                icon: const Icon(
-                                  Icons.lightbulb,
-                                  size: 64,
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: IconButton.filledTonal(
+                                  onPressed: () {
+                                    identifyPart(
+                                        sorterAttrs?["identify"],
+                                        _sortParts(
+                                            filterParts(snapshot.data!,
+                                                partsSearchQuery),
+                                            partsSortType)[index]['location']);
+                                  },
+                                  icon: const Icon(
+                                    Icons.lightbulb,
+                                    size: 64,
+                                  ),
                                 ),
                               ),
                             if ([null, ""].contains(sorterAttrs?["identify"]))

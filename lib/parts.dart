@@ -1,8 +1,10 @@
 import 'dart:convert';
 
+import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
 import 'package:image/image.dart' as img;
 import 'package:uuid/uuid.dart';
+import 'package:path/path.dart' as p;
 import 'package:http/http.dart' as http;
 
 import 'package:flutter/material.dart';
@@ -14,12 +16,36 @@ import 'package:flutter_linkify/flutter_linkify.dart';
 
 import 'widgets.dart';
 
-String convertUtcToLocal(String utcTimestamp) {
-  DateTime utcDateTime =
-      DateFormat("yyyy-MM-dd HH:mm:ss").parse(utcTimestamp, true);
-  DateTime localDateTime = utcDateTime.toLocal();
-  String formattedDate = DateFormat.yMMMd().add_jms().format(localDateTime);
-  return formattedDate;
+String convertUtcToLocal(BuildContext context, String utcTimestamp) {
+  try {
+    DateTime utcDateTime =
+        DateFormat("yyyy-MM-dd HH:mm:ss").parse(utcTimestamp, true);
+    DateTime localDateTime = utcDateTime.toLocal();
+    String formattedDate = DateFormat.yMMMd().add_jms().format(localDateTime);
+    return formattedDate;
+  } catch (e) {
+    SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Failed to convert utc timestamp!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                e.toString(),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+    return "UTC: $utcTimestamp";
+  }
 }
 
 Future<Uint8List> resizeImageByWidth(XFile file, int targetWidth) async {
@@ -45,6 +71,8 @@ Future<Uint8List> resizeImageByWidth(XFile file, int targetWidth) async {
 }
 
 class PartInfoPage extends StatefulWidget {
+  final String apiBaseAddress;
+
   final String partId;
   final List<dynamic> locations;
   final List<dynamic> sorters;
@@ -54,6 +82,7 @@ class PartInfoPage extends StatefulWidget {
 
   const PartInfoPage({
     super.key,
+    required this.apiBaseAddress,
     required this.partId,
     required this.locations,
     required this.sorters,
@@ -88,6 +117,8 @@ class PartInfoPageState extends State<PartInfoPage> {
   String partCreatedTimestamp = "";
   Uint8List? partImage;
 
+  bool fetchFailed = false;
+
   @override
   void initState() {
     super.initState();
@@ -95,49 +126,71 @@ class PartInfoPageState extends State<PartInfoPage> {
   }
 
   Future<Map<String, dynamic>> _fetchPartInfo() async {
-    final url =
-        Uri.parse('http://localhost:8000/parts_individual/${widget.partId}');
-    final response = await http.get(url);
+    try {
+      final url = Uri.parse(
+          p.join(widget.apiBaseAddress, 'parts_individual/${widget.partId}'));
+      final response = await http.get(url);
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      setState(() {
-        _pageTitle = data["name"];
-        partName = data["name"];
-        partSorterId = data["sorter"];
-        partSorterName = getSorterName(data["sorter"], widget.sorters);
-        partPhysicalLocation = getLocationBySorterId(
-            widget.sorters, widget.locations, data["sorter"]);
-        partLocationName = partPhysicalLocation?["name"];
-        partTags = data["tags"].split(",");
-        partTags?.remove("");
-        partQuantity = data["quantity"];
-        partQuantityType = data["quantity_type"];
-        partQuantityEnabled = data["enable_quantity"].isOdd;
-        partPrice = data["price"].toDouble();
-        partLocation = data["location"];
-        partNotes = data["notes"];
-        partAttrs = data["attrs"];
-        partUpdatedTimestamp = data["updated_at"];
-        partCreatedTimestamp = data["created_at"];
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _pageTitle = data["name"];
+          partName = data["name"];
+          partSorterId = data["sorter"];
+          partSorterName = getSorterName(data["sorter"], widget.sorters);
+          partPhysicalLocation = getLocationBySorterId(
+              widget.sorters, widget.locations, data["sorter"]);
+          partLocationName = partPhysicalLocation?["name"];
+          partTags = data["tags"].split(",");
+          partTags?.remove("");
+          partQuantity = data["quantity"];
+          partQuantityType = data["quantity_type"];
+          partQuantityEnabled = data["enable_quantity"].isOdd;
+          partPrice = data["price"].toDouble();
+          partLocation = data["location"];
+          partNotes = data["notes"];
+          partAttrs = data["attrs"];
+          partUpdatedTimestamp = data["updated_at"];
+          partCreatedTimestamp = data["created_at"];
 
-        if (data["image"] != null) {
-          partImage = base64Decode(data["image"]);
-        } else {
-          partImage = null;
-        }
+          if (data["image"] != null) {
+            partImage = base64Decode(data["image"]);
+          } else {
+            partImage = null;
+          }
 
-        final sorterAttrs = getSorterAttrs(data["sorter"], widget.sorters);
-        if (sorterAttrs.containsKey("identify") &&
-            sorterAttrs["identify"] != "") {
-          partHasIdentify = true;
-          partIdentifyApi = sorterAttrs["identify"];
-        }
-      });
-      return data;
-    } else {
-      throw Exception('Failed to load part information');
+          final sorterAttrs = getSorterAttrs(data["sorter"], widget.sorters);
+          if (sorterAttrs.containsKey("identify") &&
+              sorterAttrs["identify"] != "") {
+            partHasIdentify = true;
+            partIdentifyApi = sorterAttrs["identify"];
+          }
+        });
+        return data;
+      } else {
+        throw Exception('Failed to load part information');
+      }
+    } catch (e) {
+      if (!mounted) rethrow;
+      fetchFailed = true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            children: [
+              const Text(
+                'Part info fetch failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                e.toString(),
+              ),
+            ],
+          ),
+        ),
+      );
     }
+    return {};
   }
 
   List<dynamic> filterParts(List<dynamic> parts, String searchEntry) {
@@ -295,8 +348,8 @@ class PartInfoPageState extends State<PartInfoPage> {
     String base64String = base64Encode(fileBytes);
 
     // Send image to api
-    final url = Uri.parse(
-        'http://localhost:8000/parts_individual/${widget.partId}/image');
+    final url = Uri.parse(p.join(
+        widget.apiBaseAddress, 'parts_individual/${widget.partId}/image'));
     try {
       final response = await http.put(
         url,
@@ -350,8 +403,8 @@ class PartInfoPageState extends State<PartInfoPage> {
 
   Future<void> _removeImage() async {
     // Send image to api
-    final url = Uri.parse(
-        'http://localhost:8000/parts_individual/${widget.partId}/image');
+    final url = Uri.parse(p.join(
+        widget.apiBaseAddress, 'parts_individual/${widget.partId}/image'));
     try {
       final response = await http.put(
         url,
@@ -404,8 +457,8 @@ class PartInfoPageState extends State<PartInfoPage> {
   }
 
   Future<void> _updatePart() async {
-    final url = Uri.parse(
-        'http://localhost:8000/parts_individual/${widget.partId}'); // Replace with your API endpoint
+    final url = Uri.parse(p.join(widget.apiBaseAddress,
+        'parts_individual/${widget.partId}')); // Replace with your API endpoint
     try {
       final response = await http.put(
         url,
@@ -468,8 +521,8 @@ class PartInfoPageState extends State<PartInfoPage> {
   }
 
   Future<void> deletePart(String partId) async {
-    final url = Uri.parse(
-        'http://localhost:8000/parts_individual/$partId'); // Replace with your API endpoint
+    final url = Uri.parse(p.join(widget.apiBaseAddress,
+        'parts_individual/$partId')); // Replace with your API endpoint
 
     try {
       final response = await http.delete(url);
@@ -507,7 +560,7 @@ class PartInfoPageState extends State<PartInfoPage> {
   }
 
   Future<void> identifyPart() async {
-    final url = Uri.parse('http://localhost:8000/part_identify/');
+    final url = Uri.parse(p.join(widget.apiBaseAddress, 'part_identify/'));
     try {
       final response = await http.post(
         url,
@@ -646,15 +699,6 @@ class PartInfoPageState extends State<PartInfoPage> {
                             const BorderRadius.all(Radius.circular(20)),
                       ),
                       child: PopupMenuButton(
-                        // onPressed: () {
-                        //   _editImage().then((value) {
-                        //     _fetchPartInfo().then((value) {
-                        //       setState(() {});
-                        //       return value;
-                        //     });
-                        //     return value;
-                        //   });
-                        // },
                         itemBuilder: (BuildContext context) {
                           List<PopupMenuItem> options = [
                             const PopupMenuItem(
@@ -852,7 +896,7 @@ class PartInfoPageState extends State<PartInfoPage> {
               const Text("Updated at",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const Spacer(),
-              Text(convertUtcToLocal(partUpdatedTimestamp),
+              Text(convertUtcToLocal(context, partUpdatedTimestamp),
                   style: const TextStyle(fontSize: 18))
             ],
           ),
@@ -865,7 +909,7 @@ class PartInfoPageState extends State<PartInfoPage> {
               const Text("Created at",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const Spacer(),
-              Text(convertUtcToLocal(partCreatedTimestamp),
+              Text(convertUtcToLocal(context, partCreatedTimestamp),
                   style: const TextStyle(fontSize: 18))
             ],
           ),
@@ -893,6 +937,7 @@ class PartInfoPageState extends State<PartInfoPage> {
                         return const Center(child: CircularProgressIndicator());
                       } else if (snapshot.hasData) {
                         return ModifyPartPage(
+                            apiBaseAddress: widget.apiBaseAddress,
                             part: snapshot.data!,
                             sorters: widget.sorters,
                             onModified: () {
@@ -934,6 +979,18 @@ class PartInfoPageState extends State<PartInfoPage> {
               return const Center(child: CircularProgressIndicator());
             } else if (snapshot.hasError) {
               return Text('Error: ${snapshot.error}');
+            } else if (fetchFailed) {
+              return const Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.sentiment_very_dissatisfied_sharp, size: 240),
+                    Text(
+                      "Unexpected error while loading part information!",
+                      style: TextStyle(fontSize: 22),
+                    ),
+                  ],
+                ),
+              );
             } else if (snapshot.hasData) {
               return ListView(
                 children: [
@@ -953,10 +1010,13 @@ class PartInfoPageState extends State<PartInfoPage> {
 class ModifyPartPage extends StatefulWidget {
   const ModifyPartPage({
     super.key,
+    required this.apiBaseAddress,
     required this.part,
     required this.sorters,
     required this.onModified,
   });
+
+  final String apiBaseAddress;
 
   final Map<String, dynamic> part;
   final List<dynamic> sorters;
@@ -1039,8 +1099,8 @@ class ModifyPartPageState extends State<ModifyPartPage> {
   }
 
   Future<void> _modifyPart() async {
-    final url = Uri.parse(
-        'http://localhost:8000/parts_individual/$uniqueId'); // Replace with your API endpoint
+    final url = Uri.parse(p.join(widget.apiBaseAddress,
+        'parts_individual/$uniqueId')); // Replace with your API endpoint
     try {
       final response = await http.put(
         url,
@@ -1342,10 +1402,12 @@ class ModifyPartPageState extends State<ModifyPartPage> {
 class CreatePartPage extends StatefulWidget {
   const CreatePartPage({
     super.key,
+    required this.apiBaseAddress,
     required this.sorters,
     required this.onCreated,
   });
 
+  final String apiBaseAddress;
   final List<dynamic> sorters;
   final Function onCreated;
 
@@ -1423,7 +1485,7 @@ class CreatePartPageState extends State<CreatePartPage> {
       uniqueId = const Uuid().v4();
     }
 
-    final url = Uri.parse('http://localhost:8000/parts_individual/');
+    final url = Uri.parse(p.join(widget.apiBaseAddress, 'parts_individual/'));
     try {
       final response = await http.post(
         url,

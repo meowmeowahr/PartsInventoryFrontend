@@ -91,7 +91,7 @@ class CreateSorterPageState extends State<CreateSorterPage> {
 
   Future<void> _createSorter() async {
     final url = Uri.parse(p.join(
-        widget.apiBaseAddress, "sorters")); // Replace with your API endpoint
+        widget.apiBaseAddress, "sorters/")); // Replace with your API endpoint
     try {
       final response = await http.post(
         url,
@@ -758,6 +758,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => PartInfoPage(
+                              apiBaseAddress: widget.apiBaseAddress,
                               partId: _sortParts(
                                   filterParts(snapshot.data!, partsSearchQuery),
                                   partsSortType)[index]['id'],
@@ -1014,6 +1015,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => CreatePartPage(
+                                    apiBaseAddress: widget.apiBaseAddress,
                                     sorters: widget.sorters,
                                     onCreated: () {
                                       setState(() {

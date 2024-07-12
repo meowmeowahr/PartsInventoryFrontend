@@ -11,69 +11,15 @@ import 'package:sorter_frontend/widgets.dart';
 import 'sorters.dart';
 import 'locations.dart';
 import 'api.dart';
+import 'theme_provider.dart';
 
 void main() {
   runApp(
     ChangeNotifierProvider(
-      create: (context) => SettingsProvider(),
+      create: (context) => ThemeProvider(),
       child: const MyApp(),
     ),
   );
-}
-
-enum ThemeModeOption { system, light, dark }
-
-class SettingsProvider extends ChangeNotifier {
-  ThemeModeOption _themeModeOption = ThemeModeOption.system;
-  String _apiBaseUrl = "";
-
-  SettingsProvider() {
-    _loadPreferences();
-  }
-
-  ThemeModeOption get themeModeOption => _themeModeOption;
-  String get apiBaseUrl => _apiBaseUrl;
-
-  ThemeMode get themeMode {
-    switch (_themeModeOption) {
-      case ThemeModeOption.light:
-        return ThemeMode.light;
-      case ThemeModeOption.dark:
-        return ThemeMode.dark;
-      default:
-        return ThemeMode.system;
-    }
-  }
-
-  void _loadPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    _themeModeOption = ThemeModeOption.values[prefs.getInt('themeMode') ?? 0];
-    _apiBaseUrl = prefs.getString('apiBaseUrl') ?? '';
-    notifyListeners();
-  }
-
-  void updateThemeMode(ThemeModeOption option) async {
-    _themeModeOption = option;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('themeMode', option.index);
-    notifyListeners();
-  }
-
-  void updateApiBaseUrl(String url) {
-    _apiBaseUrl = url;
-    _savePreference('apiBaseUrl', url);
-  }
-
-  Future<void> _savePreference(String key, dynamic value) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    if (value is int) {
-      prefs.setInt(key, value);
-    } else if (value is bool) {
-      prefs.setBool(key, value);
-    } else if (value is String) {
-      prefs.setString(key, value);
-    }
-  }
 }
 
 class MyApp extends StatelessWidget {
@@ -83,7 +29,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<SettingsProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
     return MaterialApp(
       title: 'Parts Sorter',
       themeMode: themeProvider.themeMode,
@@ -126,39 +72,46 @@ class MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _fetchLocations();
-    _fetchSorters();
-    fetchAllParts().catchError((e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Theme.of(context).colorScheme.error,
-          content: Column(
-            children: [
-              const Text(
-                'All parts fetch failed!',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(
-                e.toString(),
-              ),
-            ],
+    _loadSettings().then((value) {
+      _fetchLocations();
+      _fetchSorters();
+      fetchAllParts(apiBaseAddress).catchError((e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            content: Column(
+              children: [
+                const Text(
+                  'All parts fetch failed!',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  e.toString(),
+                ),
+              ],
+            ),
           ),
-        ),
-      );
-      return [];
-    }).then((value) {
-      setState(() {
-        _parts = value;
+        );
+        return [];
+      }).then((parts) {
+        setState(() {
+          _parts = parts;
+        });
+        return parts;
       });
       return value;
     });
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final settings = Provider.of<SettingsProvider>(context);
-    apiBaseAddress = settings.apiBaseUrl;
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    apiBaseAddress = prefs.getString("apiBaseUrl") ?? "localhost:8000";
+  }
+
+  Future<void> _setApiBaseAddress(String value) async {
+    apiBaseAddress = value;
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setString("apiBaseUrl", value);
   }
 
   Future<void> _fetchLocations() async {
@@ -351,7 +304,7 @@ class MyHomePageState extends State<MyHomePage> {
     if (index < 3) {
       _fetchSorters();
       _fetchLocations();
-      fetchAllParts().catchError((e) {
+      fetchAllParts(apiBaseAddress).catchError((e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Theme.of(context).colorScheme.error,
@@ -469,7 +422,7 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _buildContent() {
-    final settings = Provider.of<SettingsProvider>(context);
+    final settings = Provider.of<ThemeProvider>(context);
     final TextEditingController _apiBaseUrlController =
         TextEditingController(text: settings.apiBaseUrl);
 
@@ -985,8 +938,7 @@ class MyHomePageState extends State<MyHomePage> {
                   labelText: 'API Base URL',
                 ),
                 onChanged: (value) {
-                  settings.updateApiBaseUrl(value);
-                  apiBaseAddress = value;
+                  _setApiBaseAddress(value);
                 },
               ),
               const Divider(),

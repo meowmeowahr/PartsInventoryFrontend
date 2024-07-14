@@ -343,7 +343,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
   Map? sorterAttrs;
 
   String partsSearchQuery = "";
-  String partsSortType = "";
+  String partsSortType = "locAsc";
 
   @override
   void initState() {
@@ -444,7 +444,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
         break;
       case 'locAsc':
         sortedParts.sort((a, b) =>
-            b['location'].toLowerCase().compareTo(a['location'].toLowerCase()));
+            a['location'].toLowerCase().compareTo(b['location'].toLowerCase()));
         break;
       default:
         // Handle invalid sorter case if needed
@@ -713,29 +713,35 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                       },
                       itemBuilder: (BuildContext context) =>
                           <PopupMenuEntry<String>>[
-                        const PopupMenuItem<String>(
+                        CheckedPopupMenuItem<String>(
+                          checked: partsSortType == 'creationTimeDesc',
                           value: 'creationTimeDesc',
-                          child: Text('Creation Time Descending'),
+                          child: const Text('Creation Time Descending'),
                         ),
-                        const PopupMenuItem<String>(
+                        CheckedPopupMenuItem<String>(
+                          checked: partsSortType == 'creationTimeAsc',
                           value: 'creationTimeAsc',
-                          child: Text('Creation Time Ascending'),
+                          child: const Text('Creation Time Ascending'),
                         ),
-                        const PopupMenuItem<String>(
+                        CheckedPopupMenuItem<String>(
+                          checked: partsSortType == 'nameAsc',
                           value: 'nameAsc',
-                          child: Text('Name Ascending'),
+                          child: const Text('Name Ascending'),
                         ),
-                        const PopupMenuItem<String>(
+                        CheckedPopupMenuItem<String>(
+                          checked: partsSortType == 'nameDesc',
                           value: 'nameDesc',
-                          child: Text('Name Descending'),
+                          child: const Text('Name Descending'),
                         ),
-                        const PopupMenuItem<String>(
+                        CheckedPopupMenuItem<String>(
+                          checked: partsSortType == 'locAsc',
                           value: 'locAsc',
-                          child: Text('Location Name Ascending'),
+                          child: const Text('Location Name Ascending'),
                         ),
-                        const PopupMenuItem<String>(
+                        CheckedPopupMenuItem<String>(
+                          checked: partsSortType == 'locDesc',
                           value: 'locDesc',
-                          child: Text('Location Name Descending'),
+                          child: const Text('Location Name Descending'),
                         ),
                       ],
                     ),

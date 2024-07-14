@@ -133,39 +133,39 @@ class PartInfoPageState extends State<PartInfoPage> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        setState(() {
-          _pageTitle = data["name"];
-          partName = data["name"];
-          partSorterId = data["sorter"];
-          partSorterName = getSorterName(data["sorter"], widget.sorters);
-          partPhysicalLocation = getLocationBySorterId(
-              widget.sorters, widget.locations, data["sorter"]);
-          partLocationName = partPhysicalLocation?["name"];
-          partTags = data["tags"].split(",");
-          partTags?.remove("");
-          partQuantity = data["quantity"];
-          partQuantityType = data["quantity_type"];
-          partQuantityEnabled = data["enable_quantity"].isOdd;
-          partPrice = data["price"].toDouble();
-          partLocation = data["location"];
-          partNotes = data["notes"];
-          partAttrs = data["attrs"];
-          partUpdatedTimestamp = data["updated_at"];
-          partCreatedTimestamp = data["created_at"];
+        _pageTitle = data["name"];
+        partName = data["name"];
+        partSorterId = data["sorter"];
+        partSorterName = getSorterName(data["sorter"], widget.sorters);
+        partPhysicalLocation = getLocationBySorterId(
+            widget.sorters, widget.locations, data["sorter"]);
+        partLocationName = partPhysicalLocation?["name"];
+        partTags = data["tags"].split(",");
+        partTags?.remove("");
+        partQuantity = data["quantity"];
+        partQuantityType = data["quantity_type"];
+        partQuantityEnabled = data["enable_quantity"].isOdd;
+        partPrice = data["price"].toDouble();
+        partLocation = data["location"];
+        partNotes = data["notes"];
+        partAttrs = data["attrs"];
+        partUpdatedTimestamp = data["updated_at"];
+        partCreatedTimestamp = data["created_at"];
 
-          if (data["image"] != null) {
-            partImage = base64Decode(data["image"]);
-          } else {
-            partImage = null;
-          }
+        if (data["image"] != null) {
+          partImage = base64Decode(data["image"]);
+        } else {
+          partImage = null;
+        }
 
-          final sorterAttrs = getSorterAttrs(data["sorter"], widget.sorters);
-          if (sorterAttrs.containsKey("identify") &&
-              sorterAttrs["identify"] != "") {
-            partHasIdentify = true;
-            partIdentifyApi = sorterAttrs["identify"];
-          }
-        });
+        final sorterAttrs = getSorterAttrs(data["sorter"], widget.sorters);
+        if (sorterAttrs.containsKey("identify") &&
+            sorterAttrs["identify"] != "") {
+          partHasIdentify = true;
+          partIdentifyApi = sorterAttrs["identify"];
+        }
+        if (!mounted) return data;
+        setState(() {});
         return data;
       } else {
         throw Exception('Failed to load part information');

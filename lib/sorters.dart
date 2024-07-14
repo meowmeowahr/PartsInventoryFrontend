@@ -734,7 +734,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                           child: Text('Location Name Ascending'),
                         ),
                         const PopupMenuItem<String>(
-                          value: 'LocDesc',
+                          value: 'locDesc',
                           child: Text('Location Name Descending'),
                         ),
                       ],

@@ -472,7 +472,7 @@ class MyHomePageState extends State<MyHomePage> {
                     fontSize: 26, color: Theme.of(context).colorScheme.primary),
               ),
               Text(
-                "Total Inventory Value: \$${getTotalValue()}",
+                "Total Inventory Value: \$${getTotalValue().toStringAsFixed(2)}",
                 style: TextStyle(
                     fontSize: 26, color: Theme.of(context).colorScheme.primary),
               ),

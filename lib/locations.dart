@@ -441,7 +441,7 @@ class LocationInfoPageState extends State<LocationInfoPage> {
           children: [
             const Text("Tags:"),
             const SizedBox(width: 4.0),
-            locationTags?.firstOrNull != ""
+            (locationTags?.firstOrNull ?? "") != ""
                 ? Flexible(
                     child: Wrap(
                       spacing: 4.0,

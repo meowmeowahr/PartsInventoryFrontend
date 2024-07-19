@@ -597,7 +597,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
           children: [
             const Text("Tags:"),
             const SizedBox(width: 4.0),
-            sorterTags?.firstOrNull != ""
+            (sorterTags?.firstOrNull ?? "") != ""
                 ? Flexible(
                     child: Wrap(
                       spacing: 4.0,
@@ -993,7 +993,11 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                     return Row(
                       children: [
                         Expanded(
-                          child: _buildInfoPane(),
+                          child: ListView(
+                            children: [
+                              _buildInfoPane(),
+                            ],
+                          ),
                         ),
                         Expanded(
                           child: ListView(

@@ -447,27 +447,33 @@ class MyHomePageState extends State<MyHomePage> {
         TextEditingController(text: settings.apiBaseUrl);
 
     if ((settings.apiBaseUrl == "") && _selectedIndex != 3) {
-      return const Column(
+      return Column(
         children: [
-          Spacer(),
-          Icon(Icons.settings, size: 180),
-          Text(
+          const Spacer(),
+          const Icon(Icons.settings, size: 180),
+          const Text(
             "API Base URL is not set",
             style: TextStyle(fontSize: 22),
           ),
-          Spacer(),
-          Row(
-            children: [
-              Spacer(),
-              Padding(
-                padding: EdgeInsets.only(
-                  right: 32,
-                  bottom: 16,
-                ),
-                child: Icon(Icons.arrow_downward, size: 32),
-              ),
-            ],
-          ),
+          const Spacer(),
+          LayoutBuilder(builder: (context, constraints) {
+            if (constraints.maxWidth < 600) {
+              return const Row(
+                children: [
+                  Spacer(),
+                  Padding(
+                    padding: EdgeInsets.only(
+                      right: 32,
+                      bottom: 16,
+                    ),
+                    child: Icon(Icons.arrow_downward, size: 32),
+                  ),
+                ],
+              );
+            } else {
+              return const SizedBox.shrink();
+            }
+          }),
         ],
       );
     }

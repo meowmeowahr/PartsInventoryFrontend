@@ -5,14 +5,12 @@ enum ThemeModeOption { system, light, dark }
 
 class ThemeProvider extends ChangeNotifier {
   ThemeModeOption _themeModeOption = ThemeModeOption.system;
-  String _apiBaseUrl = "";
 
   ThemeProvider() {
     _loadPreferences();
   }
 
   ThemeModeOption get themeModeOption => _themeModeOption;
-  String get apiBaseUrl => _apiBaseUrl;
 
   ThemeMode get themeMode {
     switch (_themeModeOption) {
@@ -28,7 +26,6 @@ class ThemeProvider extends ChangeNotifier {
   void _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     _themeModeOption = ThemeModeOption.values[prefs.getInt('themeMode') ?? 0];
-    _apiBaseUrl = prefs.getString('apiBaseUrl') ?? '';
     notifyListeners();
   }
 

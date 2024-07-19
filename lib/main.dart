@@ -107,7 +107,7 @@ class MyHomePageState extends State<MyHomePage> {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    apiBaseAddress = prefs.getString("apiBaseUrl") ?? "localhost:8000";
+    apiBaseAddress = prefs.getString("apiBaseUrl") ?? "";
   }
 
   Future<void> _setApiBaseAddress(String value) async {
@@ -444,9 +444,9 @@ class MyHomePageState extends State<MyHomePage> {
   Widget _buildContent() {
     final settings = Provider.of<ThemeProvider>(context);
     final TextEditingController apiBaseUrlController =
-        TextEditingController(text: settings.apiBaseUrl);
+        TextEditingController(text: apiBaseAddress);
 
-    if ((settings.apiBaseUrl == "") && _selectedIndex != 3) {
+    if ((apiBaseAddress == "") && _selectedIndex != 3) {
       return Column(
         children: [
           const Spacer(),
@@ -1008,7 +1008,7 @@ class MyHomePageState extends State<MyHomePage> {
           ),
         );
       default:
-        return const Text('Default Area');
+        return const Text('Something went wrong!');
     }
   }
 }

@@ -53,7 +53,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class MyHomePageState extends State<MyHomePage> {
-  String apiBaseAddress = "http://localhost:8000/";
+  String apiBaseAddress = "";
 
   int? _selectedIndex = 0;
   List _locations = [];
@@ -73,32 +73,34 @@ class MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     _loadSettings().then((value) {
-      _fetchLocations();
-      _fetchSorters();
-      fetchAllParts(apiBaseAddress).catchError((e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: Theme.of(context).colorScheme.error,
-            content: Column(
-              children: [
-                const Text(
-                  'All parts fetch failed!',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  e.toString(),
-                ),
-              ],
+      if (apiBaseAddress != "") {
+        _fetchLocations();
+        _fetchSorters();
+        fetchAllParts(apiBaseAddress).catchError((e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              content: Column(
+                children: [
+                  const Text(
+                    'All parts fetch failed!',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    e.toString(),
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-        return [];
-      }).then((parts) {
-        setState(() {
-          _parts = parts;
+          );
+          return [];
+        }).then((parts) {
+          setState(() {
+            _parts = parts;
+          });
+          return parts;
         });
-        return parts;
-      });
+      }
       return value;
     });
   }
@@ -318,30 +320,32 @@ class MyHomePageState extends State<MyHomePage> {
 
   void _onItemTapped(int index) {
     if (index < 3) {
-      _fetchSorters();
-      _fetchLocations();
-      fetchAllParts(apiBaseAddress).catchError((e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: Theme.of(context).colorScheme.error,
-            content: Column(
-              children: [
-                const Text(
-                  'All parts fetch failed!',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  e.toString(),
-                ),
-              ],
+      if (apiBaseAddress != "") {
+        _fetchSorters();
+        _fetchLocations();
+        fetchAllParts(apiBaseAddress).catchError((e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              content: Column(
+                children: [
+                  const Text(
+                    'All parts fetch failed!',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    e.toString(),
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-        return [];
-      }).then((value) {
-        _parts = value;
-        return value;
-      });
+          );
+          return [];
+        }).then((value) {
+          _parts = value;
+          return value;
+        });
+      }
     }
     setState(() {
       _selectedIndex = index;
@@ -439,8 +443,34 @@ class MyHomePageState extends State<MyHomePage> {
 
   Widget _buildContent() {
     final settings = Provider.of<ThemeProvider>(context);
-    final TextEditingController _apiBaseUrlController =
+    final TextEditingController apiBaseUrlController =
         TextEditingController(text: settings.apiBaseUrl);
+
+    if ((settings.apiBaseUrl == "") && _selectedIndex != 3) {
+      return const Column(
+        children: [
+          Spacer(),
+          Icon(Icons.settings, size: 180),
+          Text(
+            "API Base URL is not set",
+            style: TextStyle(fontSize: 22),
+          ),
+          Spacer(),
+          Row(
+            children: [
+              Spacer(),
+              Padding(
+                padding: EdgeInsets.only(
+                  right: 32,
+                  bottom: 16,
+                ),
+                child: Icon(Icons.arrow_downward, size: 32),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
 
     switch (_selectedIndex) {
       case 0:
@@ -958,7 +988,7 @@ class MyHomePageState extends State<MyHomePage> {
               ),
               const SizedBox(height: 8),
               TextField(
-                controller: _apiBaseUrlController,
+                controller: apiBaseUrlController,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   labelText: 'API Base URL',

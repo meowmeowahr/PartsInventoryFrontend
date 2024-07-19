@@ -946,6 +946,7 @@ class PartInfoPageState extends State<PartInfoPage> {
                             onModified: () {
                               widget.onModify();
                               _partInfo = _fetchPartInfo().then((value) {
+                                if (!mounted) return value;
                                 setState(() {});
                                 return value;
                               });

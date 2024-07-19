@@ -215,7 +215,7 @@ class CreateLocationPageState extends State<CreateLocationPage> {
                   });
                 },
                 tagBuilder: (context, index) => Padding(
-                  padding: const EdgeInsets.only(top: 7.0),
+                  padding: const EdgeInsets.only(top: 7.0, bottom: 3.5),
                   child: Chip(
                     label: Text(locationTags[index]),
                     onDeleted: () {
@@ -1015,7 +1015,7 @@ class ModifyLocationPageState extends State<ModifyLocationPage> {
                   });
                 },
                 tagBuilder: (context, index) => Padding(
-                  padding: const EdgeInsets.only(top: 7.0),
+                  padding: const EdgeInsets.only(top: 7.0, bottom: 3.5),
                   child: Chip(
                     label: Text(locationTags[index]),
                     onDeleted: () {

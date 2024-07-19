@@ -246,7 +246,7 @@ class CreateSorterPageState extends State<CreateSorterPage> {
                   });
                 },
                 tagBuilder: (context, index) => Padding(
-                  padding: const EdgeInsets.only(top: 7.0),
+                  padding: const EdgeInsets.only(top: 7.0, bottom: 3.5),
                   child: Chip(
                     label: Text(sorterTags[index]),
                     onDeleted: () {
@@ -1311,7 +1311,7 @@ class ModifySorterPageState extends State<ModifySorterPage> {
                   });
                 },
                 tagBuilder: (context, index) => Padding(
-                  padding: const EdgeInsets.only(top: 7.0),
+                  padding: const EdgeInsets.only(top: 7.0, bottom: 3.5),
                   child: Chip(
                     label: Text(sorterTags[index]),
                     onDeleted: () {

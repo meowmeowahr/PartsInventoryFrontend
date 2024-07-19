@@ -1239,7 +1239,7 @@ class ModifyPartPageState extends State<ModifyPartPage> {
                   });
                 },
                 tagBuilder: (context, index) => Padding(
-                  padding: const EdgeInsets.only(top: 7.0),
+                  padding: const EdgeInsets.only(top: 7.0, bottom: 3.5),
                   child: Chip(
                     label: Text(partTags[index]),
                     onDeleted: () {
@@ -1654,7 +1654,7 @@ class CreatePartPageState extends State<CreatePartPage> {
                   });
                 },
                 tagBuilder: (context, index) => Padding(
-                  padding: const EdgeInsets.only(top: 7.0),
+                  padding: const EdgeInsets.only(top: 7.0, bottom: 3.5),
                   child: Chip(
                     label: Text(partTags[index]),
                     onDeleted: () {

@@ -990,18 +990,51 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                 builder: (context, constraints) {
                   if (constraints.maxWidth > 600) {
                     // Two-column layout for larger screens
-                    return Row(
+                    return Stack(
                       children: [
-                        Expanded(
-                          child: ListView(
-                            children: [
-                              _buildInfoPane(),
-                            ],
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ListView(
+                                children: [
+                                  _buildInfoPane(),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: ListView(
+                                children: [_buildPartsPane()],
+                              ),
+                            ),
+                          ],
                         ),
-                        Expanded(
-                          child: ListView(
-                            children: [_buildPartsPane()],
+                        Align(
+                          alignment: Alignment.bottomRight,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: FloatingActionButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => CreatePartPage(
+                                      apiBaseAddress: widget.apiBaseAddress,
+                                      sorters: widget.sorters,
+                                      onCreated: () {
+                                        setState(() {
+                                          parts = _fetchParts(widget.sorterId)
+                                              .then((value) {
+                                            setState(() {});
+                                            return value;
+                                          });
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: const Icon(Icons.add),
+                            ),
                           ),
                         ),
                       ],

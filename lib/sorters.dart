@@ -1002,6 +1002,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                               ),
                             ),
                             Expanded(
+                              flex: 3,
                               child: ListView(
                                 children: [_buildPartsPane()],
                               ),

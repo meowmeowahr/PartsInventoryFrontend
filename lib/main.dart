@@ -8,7 +8,6 @@ import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sorter_frontend/widgets.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import 'sorters.dart';
@@ -438,18 +437,20 @@ class MyHomePageState extends State<MyHomePage> {
                       applicationLegalese: "©️ 2024 Kevin Ahr",
                       children: [
                         ListTile(
-                          leading: Icon(Icons.public_rounded),
-                          title: Text("Application GitHub repo"),
-                          subtitle: Text("meowmeowahr/PartsInventoryFrontend"),
+                          leading: const Icon(Icons.public_rounded),
+                          title: const Text("Application GitHub repo"),
+                          subtitle:
+                              const Text("meowmeowahr/PartsInventoryFrontend"),
                           onTap: () {
                             launchUrlString(
                                 "https://github.com/meowmeowahr/PartsInventoryFrontend");
                           },
                         ),
                         ListTile(
-                          leading: Icon(Icons.gavel_rounded),
-                          title: Text("Application License"),
-                          subtitle: Text("GNU General Public License 3.0"),
+                          leading: const Icon(Icons.gavel_rounded),
+                          title: const Text("Application License"),
+                          subtitle:
+                              const Text("GNU General Public License 3.0"),
                           onTap: () {
                             launchUrlString(
                                 "https://www.gnu.org/licenses/gpl-3.0.en.html");
@@ -643,8 +644,8 @@ class MyHomePageState extends State<MyHomePage> {
                             );
                           },
                           style: ButtonStyle(
-                            shape: MaterialStateProperty.all<
-                                RoundedRectangleBorder>(
+                            shape:
+                                WidgetStateProperty.all<RoundedRectangleBorder>(
                               RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12.0),
                               ),
@@ -736,7 +737,7 @@ class MyHomePageState extends State<MyHomePage> {
                                               style: TextStyle(
                                                   color: Theme.of(context)
                                                       .colorScheme
-                                                      .onBackground),
+                                                      .onSurface),
                                             )
                                     ],
                                   ),
@@ -863,8 +864,8 @@ class MyHomePageState extends State<MyHomePage> {
                             );
                           },
                           style: ButtonStyle(
-                            shape: MaterialStateProperty.all<
-                                RoundedRectangleBorder>(
+                            shape:
+                                WidgetStateProperty.all<RoundedRectangleBorder>(
                               RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12.0),
                               ),
@@ -953,7 +954,7 @@ class MyHomePageState extends State<MyHomePage> {
                                               style: TextStyle(
                                                   color: Theme.of(context)
                                                       .colorScheme
-                                                      .onBackground))
+                                                      .onSurface))
                                     ],
                                   ),
                                 ),

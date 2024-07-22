@@ -188,7 +188,7 @@ class CreateSorterPageState extends State<CreateSorterPage> {
                       autoGenerateId = value!;
                       if (autoGenerateId) {
                         // Auto-generate unique ID
-                        _uniqueIdController.text = Uuid().v4().toString();
+                        _uniqueIdController.text = const Uuid().v4().toString();
                       }
                     });
                   },
@@ -791,8 +791,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                         );
                       },
                       style: ButtonStyle(
-                        shape:
-                            MaterialStateProperty.all<RoundedRectangleBorder>(
+                        shape: WidgetStateProperty.all<RoundedRectangleBorder>(
                           RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12.0),
                           ),
@@ -905,7 +904,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                                           style: TextStyle(
                                               color: Theme.of(context)
                                                   .colorScheme
-                                                  .onBackground))
+                                                  .onSurface))
                                 ],
                               ),
                             ),

@@ -3,10 +3,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:http/http.dart' as http;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sorter_frontend/widgets.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 import 'sorters.dart';
 import 'locations.dart';
@@ -69,9 +72,13 @@ class MyHomePageState extends State<MyHomePage> {
   String partsSortType = "creationTimeDesc";
   String partsSearchQuery = "";
 
+  PackageInfo? packageInfo;
+
   @override
   void initState() {
     super.initState();
+    WidgetsFlutterBinding.ensureInitialized();
+    _loadPackageInfo();
     _loadSettings().then((value) {
       if (apiBaseAddress != "") {
         _fetchLocations();
@@ -108,6 +115,10 @@ class MyHomePageState extends State<MyHomePage> {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     apiBaseAddress = prefs.getString("apiBaseUrl") ?? "";
+  }
+
+  Future<void> _loadPackageInfo() async {
+    packageInfo = await PackageInfo.fromPlatform();
   }
 
   Future<void> _setApiBaseAddress(String value) async {
@@ -416,6 +427,38 @@ class MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Part Sorter"),
+        actions: [
+          if (_selectedIndex == 0)
+            IconButton(
+                onPressed: () {
+                  showAboutDialog(
+                      context: context,
+                      applicationIcon: Image.asset("assets/icon-96.png"),
+                      applicationVersion: packageInfo?.version,
+                      applicationLegalese: "©️ 2024 Kevin Ahr",
+                      children: [
+                        ListTile(
+                          leading: Icon(Icons.public_rounded),
+                          title: Text("Application GitHub repo"),
+                          subtitle: Text("meowmeowahr/PartsInventoryFrontend"),
+                          onTap: () {
+                            launchUrlString(
+                                "https://github.com/meowmeowahr/PartsInventoryFrontend");
+                          },
+                        ),
+                        ListTile(
+                          leading: Icon(Icons.gavel_rounded),
+                          title: Text("Application License"),
+                          subtitle: Text("GNU General Public License 3.0"),
+                          onTap: () {
+                            launchUrlString(
+                                "https://www.gnu.org/licenses/gpl-3.0.en.html");
+                          },
+                        ),
+                      ]);
+                },
+                icon: const Icon(Icons.info_outline))
+        ],
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {

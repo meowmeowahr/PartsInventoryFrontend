@@ -635,7 +635,7 @@ class LocationInfoPageState extends State<LocationInfoPage> {
                   );
                 },
                 style: ButtonStyle(
-                  shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                  shape: WidgetStateProperty.all<RoundedRectangleBorder>(
                     RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12.0),
                     ),
@@ -721,7 +721,7 @@ class LocationInfoPageState extends State<LocationInfoPage> {
                                     style: TextStyle(
                                         color: Theme.of(context)
                                             .colorScheme
-                                            .onBackground))
+                                            .onSurface))
                           ],
                         ),
                       ),

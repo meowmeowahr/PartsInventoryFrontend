@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
+import 'package:responsive_grid/responsive_grid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sorter_frontend/widgets.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -524,37 +525,127 @@ class MyHomePageState extends State<MyHomePage> {
 
     switch (_selectedIndex) {
       case 0:
-        return SingleChildScrollView(
-          child: Column(
+        return ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 670),
+          child: ResponsiveStaggeredGridList(
+            desiredItemWidth: 220,
             children: [
-              const Icon(
-                Icons.home,
-                size: 240,
+              const Card(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.home_rounded,
+                      size: 200,
+                    ),
+                  ],
+                ),
               ),
-              Text(
-                "Locations in Inventory: ${_locations.length}",
-                style: TextStyle(
-                    fontSize: 24, color: Theme.of(context).colorScheme.primary),
+              Card(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.room_rounded,
+                      size: 80,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    Row(
+                      children: [
+                        Text(
+                          _locations.length.toString(),
+                          style: TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary),
+                        ),
+                        Text(
+                          "Locations",
+                          style: TextStyle(
+                            fontSize: 24,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              Text(
-                "Sorters in Inventory: ${_sorters.length}",
-                style: TextStyle(
-                    fontSize: 24, color: Theme.of(context).colorScheme.primary),
+              Card(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.inventory_2_rounded,
+                      size: 80,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    Row(
+                      children: [
+                        Text(
+                          _sorters.length.toString(),
+                          style: TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary),
+                        ),
+                        Text(
+                          "Sorters",
+                          style: TextStyle(
+                            fontSize: 24,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              Text(
-                "Items in Inventory: ${_parts.length}",
-                style: TextStyle(
-                    fontSize: 26, color: Theme.of(context).colorScheme.primary),
+              Card(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.category_rounded,
+                      size: 80,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    Row(
+                      children: [
+                        Text(
+                          _parts.length.toString(),
+                          style: TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary),
+                        ),
+                        Text(
+                          "Items",
+                          style: TextStyle(
+                            fontSize: 24,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              Text(
-                "Total Inventory Quantity: ${getTotalQuantity()}",
-                style: TextStyle(
-                    fontSize: 26, color: Theme.of(context).colorScheme.primary),
+              Card(
+                child: Text(
+                  "Total Inventory Quantity: ${getTotalQuantity()}",
+                  style: TextStyle(
+                      fontSize: 26,
+                      color: Theme.of(context).colorScheme.primary),
+                ),
               ),
-              Text(
-                "Total Inventory Value: \$${getTotalValue().toStringAsFixed(2)}",
-                style: TextStyle(
-                    fontSize: 26, color: Theme.of(context).colorScheme.primary),
+              Card(
+                child: Text(
+                  "Total Inventory Value: \$${getTotalValue().toStringAsFixed(2)}",
+                  style: TextStyle(
+                      fontSize: 26,
+                      color: Theme.of(context).colorScheme.primary),
+                ),
               ),
             ],
           ),

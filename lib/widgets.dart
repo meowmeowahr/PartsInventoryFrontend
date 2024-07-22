@@ -52,7 +52,7 @@ class NumberSpinner extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      ElevatedButton(
+                      FilledButton(
                         onPressed: _decrement,
                         style: ElevatedButton.styleFrom(
                           elevation: 2,
@@ -71,7 +71,7 @@ class NumberSpinner extends StatelessWidget {
                           style: const TextStyle(fontSize: 24.0),
                         ),
                       ),
-                      ElevatedButton(
+                      FilledButton(
                         onPressed: _increment,
                         style: ElevatedButton.styleFrom(
                           elevation: 2,

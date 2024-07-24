@@ -277,14 +277,15 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _onItemTapped(int index) async {
+    setState(() {
+      _selectedIndex = index;
+    });
     if (index < 3) {
       await apiErrorCatcher(() async {
         await fetchData();
       });
     }
-    setState(() {
-      _selectedIndex = index;
-    });
+    setState(() {});
   }
 
   Widget _buildNavigationRail(BuildContext context) {

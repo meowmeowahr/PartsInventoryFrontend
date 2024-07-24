@@ -1,16 +1,13 @@
-# sorter_frontend
+![Application icon](docs/icon-192.png)
 
-A new Flutter project.
+# Parts Inventory Frontend
+Frontend portion for my parts inventory management system
 
-## Getting Started
+Written in Dart/Flutter
 
-This project is a starting point for a Flutter application.
+Supports Windows, Android, Web, and Linux (MacOS and iOS support hasn't been tested)
 
-A few resources to get you started if this is your first Flutter project:
+# See also
+[Backend repo](https://github.com/meowmeowahrPartsInventoryBackend)
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+[NeoPixel controller repo](https://github.com/meowmeowahr/PartsInventoryNeoPixels)

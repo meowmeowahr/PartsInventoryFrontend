@@ -1,16 +1,18 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+
 import 'package:http/http.dart' as http;
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
-import 'package:responsive_grid/responsive_grid.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sorter_frontend/widgets.dart';
 import 'package:url_launcher/url_launcher_string.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:responsive_grid/responsive_grid.dart';
 
+import 'widgets.dart';
 import 'sorters.dart';
 import 'locations.dart';
 import 'api.dart';
@@ -79,37 +81,32 @@ class MyHomePageState extends State<MyHomePage> {
     super.initState();
     WidgetsFlutterBinding.ensureInitialized();
     _loadPackageInfo();
-    _loadSettings().then((value) {
-      if (apiBaseAddress != "") {
-        _fetchLocations();
-        _fetchSorters();
-        fetchAllParts(apiBaseAddress).catchError((e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              content: Column(
-                children: [
-                  const Text(
-                    'All parts fetch failed!',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    e.toString(),
-                  ),
-                ],
-              ),
-            ),
-          );
-          return [];
-        }).then((parts) {
-          setState(() {
-            _parts = parts;
-          });
-          return parts;
-        });
-      }
-      return value;
+    initStateAsync();
+  }
+
+  Future<void> initStateAsync() async {
+    await _loadSettings();
+    await apiErrorCatcher(() async {
+      await fetchData();
     });
+  }
+
+  Future<void> fetchData() async {
+    if (apiBaseAddress != "") {
+      _locations = await fetchLocations(apiBaseAddress);
+      _sorters = await fetchSorters(apiBaseAddress);
+      _parts = await fetchAllParts(apiBaseAddress);
+    }
+  }
+
+  Future<void> apiErrorCatcher(AsyncCallback apiAction) async {
+    try {
+      await apiAction().catchError((e) {
+        print("API ERROR: $e");
+      });
+    } catch (e) {
+      print("API ERROR: $e");
+    }
   }
 
   Future<void> _loadSettings() async {
@@ -127,75 +124,26 @@ class MyHomePageState extends State<MyHomePage> {
     prefs.setString("apiBaseUrl", value);
   }
 
-  Future<void> _fetchLocations() async {
+  Future<List<dynamic>> fetchLocations(String apiBaseAddress) async {
     final url = Uri.parse(
         p.join(apiBaseAddress, "locations")); // Replace with your API endpoint
-    try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        final List<dynamic> locationsJson = jsonDecode(response.body);
-        setState(() {
-          _locations = locationsJson;
-        });
-      } else {
-        throw Exception('Failed to load locations');
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Theme.of(context).colorScheme.error,
-          content: Column(
-            children: [
-              const Text(
-                'Location fetch failed!',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(
-                e.toString(),
-              ),
-            ],
-          ),
-        ),
-      );
-      _locations = [];
-      // Handle error as needed
+    final response = await http.get(url);
+    if (response.statusCode == 200) {
+      final List<dynamic> locationsJson = jsonDecode(response.body);
+      return locationsJson;
+    } else {
+      throw Exception('Failed to load locations');
     }
   }
 
-  Future<void> _fetchSorters() async {
-    final url = Uri.parse(
-        p.join(apiBaseAddress, "sorters")); // Replace with your API endpoint
-    try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        final List<dynamic> sortersJson = jsonDecode(response.body);
-        setState(() {
-          _sorters = sortersJson;
-        });
-      } else {
-        throw Exception('Failed to load sorters');
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Theme.of(context).colorScheme.error,
-          content: Column(
-            children: [
-              const Text(
-                'Sorter fetch failed!',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(
-                e.toString(),
-              ),
-            ],
-          ),
-        ),
-      );
-      _sorters = [];
-      // Handle error as needed
+  Future<List<dynamic>> fetchSorters(String apiBaseAddress) async {
+    final url = Uri.parse(p.join(apiBaseAddress, "sorters"));
+    final response = await http.get(url);
+    if (response.statusCode == 200) {
+      final List<dynamic> sortersJson = jsonDecode(response.body);
+      return sortersJson;
+    } else {
+      throw Exception('Failed to load sorters');
     }
   }
 
@@ -276,8 +224,7 @@ class MyHomePageState extends State<MyHomePage> {
         orElse: () => null,
       );
       if (location != null) {
-        return location['name']
-            .toString(); // Assuming the location contains a 'name' field
+        return location['name'].toString();
       } else {
         throw Exception('Location not found');
       }
@@ -329,34 +276,11 @@ class MyHomePageState extends State<MyHomePage> {
     return value;
   }
 
-  void _onItemTapped(int index) {
+  Future<void> _onItemTapped(int index) async {
     if (index < 3) {
-      if (apiBaseAddress != "") {
-        _fetchSorters();
-        _fetchLocations();
-        fetchAllParts(apiBaseAddress).catchError((e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              content: Column(
-                children: [
-                  const Text(
-                    'All parts fetch failed!',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    e.toString(),
-                  ),
-                ],
-              ),
-            ),
-          );
-          return [];
-        }).then((value) {
-          _parts = value;
-          return value;
-        });
-      }
+      await apiErrorCatcher(() async {
+        await fetchData();
+      });
     }
     setState(() {
       _selectedIndex = index;
@@ -722,13 +646,21 @@ class MyHomePageState extends State<MyHomePage> {
                                           _locations, locationsSearchQuery),
                                       locationsSortType)[index]['id'],
                                   locations: _locations,
-                                  onDelete: () {
-                                    _fetchLocations();
-                                    _fetchSorters();
+                                  onDelete: () async {
+                                    await apiErrorCatcher(() async {
+                                      _locations =
+                                          await fetchLocations(apiBaseAddress);
+                                      _sorters =
+                                          await fetchSorters(apiBaseAddress);
+                                    });
                                   },
-                                  onModify: () {
-                                    _fetchLocations();
-                                    _fetchSorters();
+                                  onModify: () async {
+                                    await apiErrorCatcher(() async {
+                                      _locations =
+                                          await fetchLocations(apiBaseAddress);
+                                      _sorters =
+                                          await fetchSorters(apiBaseAddress);
+                                    });
                                   },
                                 ),
                               ),
@@ -855,9 +787,12 @@ class MyHomePageState extends State<MyHomePage> {
                         MaterialPageRoute(
                           builder: (context) => CreateLocationPage(
                             apiBaseAddress: apiBaseAddress,
-                            onCreated: () {
-                              setState(() {
-                                _fetchLocations();
+                            onCreated: () async {
+                              await apiErrorCatcher(() async {
+                                setState(() async {
+                                  _locations =
+                                      await fetchLocations(apiBaseAddress);
+                                });
                               });
                             },
                           ),
@@ -942,13 +877,21 @@ class MyHomePageState extends State<MyHomePage> {
                                       sortersSortType)[index]['id'],
                                   locations: _locations,
                                   sorters: _sorters,
-                                  onDelete: () {
-                                    _fetchSorters();
-                                    _fetchLocations();
+                                  onDelete: () async {
+                                    await apiErrorCatcher(() async {
+                                      _locations =
+                                          await fetchLocations(apiBaseAddress);
+                                      _sorters =
+                                          await fetchSorters(apiBaseAddress);
+                                    });
                                   },
-                                  onModify: () {
-                                    _fetchSorters();
-                                    _fetchLocations();
+                                  onModify: () async {
+                                    await apiErrorCatcher(() async {
+                                      _locations =
+                                          await fetchLocations(apiBaseAddress);
+                                      _sorters =
+                                          await fetchSorters(apiBaseAddress);
+                                    });
                                   },
                                 ),
                               ),
@@ -1072,9 +1015,11 @@ class MyHomePageState extends State<MyHomePage> {
                         builder: (context) => CreateSorterPage(
                           apiBaseAddress: apiBaseAddress,
                           locations: _locations,
-                          onCreated: () {
-                            setState(() {
-                              _fetchSorters();
+                          onCreated: () async {
+                            await apiErrorCatcher(() async {
+                              setState(() async {
+                                _sorters = await fetchSorters(apiBaseAddress);
+                              });
                             });
                           },
                         ),

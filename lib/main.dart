@@ -1105,11 +1105,13 @@ class MyHomePageState extends State<MyHomePage> {
                                                   ),
                                               ],
                                             )
-                                          : Text("No Tags",
+                                          : Text(
+                                              "No Tags",
                                               style: TextStyle(
                                                   color: Theme.of(context)
                                                       .colorScheme
-                                                      .onSurface))
+                                                      .onSurface),
+                                            ),
                                     ],
                                   ),
                                 ),

@@ -1,4 +1,4 @@
-package com.example.sorter_frontend
+package com.meowmeowahr.sorter_frontend
 
 import io.flutter.embedding.android.FlutterActivity
 

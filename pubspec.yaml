@@ -46,7 +46,6 @@ dependencies:
   flutter_linkify: ^6.0.0
   responsive_grid: ^2.4.4
   package_info_plus: ^8.0.0
-  rename_app: ^1.6.1
 
 dev_dependencies:
   flutter_test:

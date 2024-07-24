@@ -510,27 +510,28 @@ class MyHomePageState extends State<MyHomePage> {
           child: ResponsiveStaggeredGridList(
             desiredItemWidth: 220,
             children: [
-              const Card(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.home_rounded,
-                      size: 200,
-                    ),
-                  ],
-                ),
-              ),
               Card(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    Icon(Icons.home_rounded,
+                        size: 200,
+                        color: Theme.of(context).colorScheme.primary),
+                  ],
+                ),
+              ),
+              Card(
+                child: Stack(
+                  alignment: Alignment.centerLeft,
+                  children: [
                     Icon(
                       Icons.room_rounded,
                       size: 80,
-                      color: Theme.of(context).colorScheme.primary,
+                      color:
+                          Theme.of(context).colorScheme.primary.withAlpha(58),
                     ),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           _locations.length.toString(),
@@ -540,7 +541,7 @@ class MyHomePageState extends State<MyHomePage> {
                               color: Theme.of(context).colorScheme.primary),
                         ),
                         Text(
-                          "Locations",
+                          "Location${(_locations.length > 1) ? 's' : ''}",
                           style: TextStyle(
                             fontSize: 24,
                             color: Theme.of(context).colorScheme.primary,
@@ -552,15 +553,17 @@ class MyHomePageState extends State<MyHomePage> {
                 ),
               ),
               Card(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Stack(
+                  alignment: Alignment.centerLeft,
                   children: [
                     Icon(
                       Icons.inventory_2_rounded,
                       size: 80,
-                      color: Theme.of(context).colorScheme.primary,
+                      color:
+                          Theme.of(context).colorScheme.primary.withAlpha(58),
                     ),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           _sorters.length.toString(),
@@ -569,8 +572,11 @@ class MyHomePageState extends State<MyHomePage> {
                               fontWeight: FontWeight.bold,
                               color: Theme.of(context).colorScheme.primary),
                         ),
+                        const SizedBox(
+                          width: 4.0,
+                        ),
                         Text(
-                          "Sorters",
+                          "Sorter${(_sorters.length > 1) ? 's' : ''}",
                           style: TextStyle(
                             fontSize: 24,
                             color: Theme.of(context).colorScheme.primary,
@@ -582,15 +588,17 @@ class MyHomePageState extends State<MyHomePage> {
                 ),
               ),
               Card(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Stack(
+                  alignment: Alignment.centerLeft,
                   children: [
                     Icon(
                       Icons.category_rounded,
                       size: 80,
-                      color: Theme.of(context).colorScheme.primary,
+                      color:
+                          Theme.of(context).colorScheme.primary.withAlpha(58),
                     ),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           _parts.length.toString(),
@@ -599,8 +607,11 @@ class MyHomePageState extends State<MyHomePage> {
                               fontWeight: FontWeight.bold,
                               color: Theme.of(context).colorScheme.primary),
                         ),
+                        const SizedBox(
+                          width: 4.0,
+                        ),
                         Text(
-                          "Items",
+                          "Part${(_parts.length > 1) ? 's' : ''}",
                           style: TextStyle(
                             fontSize: 24,
                             color: Theme.of(context).colorScheme.primary,
@@ -612,19 +623,73 @@ class MyHomePageState extends State<MyHomePage> {
                 ),
               ),
               Card(
-                child: Text(
-                  "Total Inventory Quantity: ${getTotalQuantity()}",
-                  style: TextStyle(
-                      fontSize: 26,
-                      color: Theme.of(context).colorScheme.primary),
+                child: Stack(
+                  alignment: Alignment.centerLeft,
+                  children: [
+                    Icon(
+                      Icons.numbers,
+                      size: 80,
+                      color:
+                          Theme.of(context).colorScheme.primary.withAlpha(58),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          getTotalQuantity().toString(),
+                          style: TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary),
+                        ),
+                        const SizedBox(
+                          width: 4.0,
+                        ),
+                        Text(
+                          "Total\nQuantity",
+                          style: TextStyle(
+                            fontSize: 24,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
               Card(
-                child: Text(
-                  "Total Inventory Value: \$${getTotalValue().toStringAsFixed(2)}",
-                  style: TextStyle(
-                      fontSize: 26,
-                      color: Theme.of(context).colorScheme.primary),
+                child: Stack(
+                  alignment: Alignment.centerLeft,
+                  children: [
+                    Icon(
+                      Icons.attach_money_rounded,
+                      size: 80,
+                      color:
+                          Theme.of(context).colorScheme.primary.withAlpha(58),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          getTotalValue().toStringAsFixed(2),
+                          style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary),
+                        ),
+                        const SizedBox(
+                          width: 4.0,
+                        ),
+                        Text(
+                          "Total\nValue",
+                          style: TextStyle(
+                            fontSize: 24,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],

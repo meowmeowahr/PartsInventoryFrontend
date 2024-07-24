@@ -76,6 +76,9 @@ class MyHomePageState extends State<MyHomePage> {
 
   PackageInfo? packageInfo;
 
+  String apiError = "";
+  bool waitingForData = true;
+
   @override
   void initState() {
     super.initState();
@@ -89,23 +92,30 @@ class MyHomePageState extends State<MyHomePage> {
     await apiErrorCatcher(() async {
       await fetchData();
     });
+    setState(() {});
   }
 
   Future<void> fetchData() async {
     if (apiBaseAddress != "") {
+      waitingForData = true;
       _locations = await fetchLocations(apiBaseAddress);
       _sorters = await fetchSorters(apiBaseAddress);
       _parts = await fetchAllParts(apiBaseAddress);
+      waitingForData = false;
     }
   }
 
   Future<void> apiErrorCatcher(AsyncCallback apiAction) async {
     try {
       await apiAction().catchError((e) {
-        print("API ERROR: $e");
+        setState(() {
+          apiError = e.toString();
+        });
       });
     } catch (e) {
-      print("API ERROR: $e");
+      setState(() {
+        apiError = e.toString();
+      });
     }
   }
 
@@ -277,6 +287,9 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _onItemTapped(int index) async {
+    if (_selectedIndex == index) {
+      return;
+    }
     setState(() {
       _selectedIndex = index;
     });
@@ -416,6 +429,44 @@ class MyHomePageState extends State<MyHomePage> {
     final TextEditingController apiBaseUrlController =
         TextEditingController(text: apiBaseAddress);
 
+    if (apiError != "") {
+      return Column(
+        children: [
+          Icon(
+            Icons.error,
+            size: 180,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          const SizedBox(
+            height: 8.0,
+          ),
+          const Text(
+            "An error occured!",
+            style: TextStyle(fontSize: 28),
+          ),
+          const SizedBox(
+            height: 8.0,
+          ),
+          TextField(
+            readOnly: true,
+            maxLines: 5,
+            controller: TextEditingController(text: apiError),
+            decoration: const InputDecoration(border: OutlineInputBorder()),
+          ),
+          const SizedBox(
+            height: 8.0,
+          ),
+          FilledButton(
+              onPressed: () {
+                setState(() {
+                  apiError = "";
+                });
+              },
+              child: const Text("Clear Error"))
+        ],
+      );
+    }
+
     if ((apiBaseAddress == "") && _selectedIndex != 3) {
       return Column(
         children: [
@@ -446,6 +497,10 @@ class MyHomePageState extends State<MyHomePage> {
           }),
         ],
       );
+    }
+
+    if (waitingForData && _selectedIndex != 3) {
+      return const CircularProgressIndicator();
     }
 
     switch (_selectedIndex) {

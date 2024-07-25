@@ -58,9 +58,14 @@ class MyHomePage extends StatefulWidget {
 }
 
 class MyHomePageState extends State<MyHomePage> {
+  PackageInfo? packageInfo;
+
   String apiBaseAddress = "";
 
   int? _selectedIndex = 0;
+
+  Map? backendInfo;
+
   List _locations = [];
   List _sorters = [];
   List _parts = [];
@@ -73,8 +78,6 @@ class MyHomePageState extends State<MyHomePage> {
 
   String partsSortType = "creationTimeDesc";
   String partsSearchQuery = "";
-
-  PackageInfo? packageInfo;
 
   String apiError = "";
   bool waitingForData = true;
@@ -101,6 +104,14 @@ class MyHomePageState extends State<MyHomePage> {
       _locations = await fetchLocations(apiBaseAddress);
       _sorters = await fetchSorters(apiBaseAddress);
       _parts = await fetchAllParts(apiBaseAddress);
+      if (backendInfo?.containsKey("latest_version") ?? false) {
+        final backendInfoLatestVersion = backendInfo?["latest_version"];
+        backendInfo =
+            await fetchBackendInfo(apiBaseAddress, fetchGithub: false);
+        backendInfo?["latest_version"] = backendInfoLatestVersion;
+      } else {
+        backendInfo = await fetchBackendInfo(apiBaseAddress, fetchGithub: true);
+      }
       waitingForData = false;
     }
   }
@@ -686,6 +697,49 @@ class MyHomePageState extends State<MyHomePage> {
                             fontSize: 24,
                             color: Theme.of(context).colorScheme.primary,
                           ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Card(
+                child: Stack(
+                  alignment: Alignment.centerLeft,
+                  children: [
+                    Icon(
+                      Icons.computer,
+                      size: 80,
+                      color:
+                          Theme.of(context).colorScheme.primary.withAlpha(58),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Column(
+                          children: [
+                            Text(
+                              "Backend Version",
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            Text(
+                              "Current - ${backendInfo?["version"]}",
+                              style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.primary),
+                            ),
+                            Text(
+                              "Latest - ${backendInfo?["latest_version"]}",
+                              style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.primary),
+                            ),
+                          ],
                         ),
                       ],
                     ),

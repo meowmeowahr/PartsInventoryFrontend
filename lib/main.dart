@@ -6,6 +6,7 @@ import 'package:flutter/scheduler.dart';
 
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
+import 'package:version/version.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -512,6 +513,28 @@ class MyHomePageState extends State<MyHomePage> {
 
     if (waitingForData && _selectedIndex != 3) {
       return const CircularProgressIndicator();
+    }
+
+    if ((backendInfo?.containsKey("min_app_version") ?? false) &&
+        (_selectedIndex != 3) &&
+        (Version.parse(backendInfo?["min_app_version"]) >
+            Version.parse(packageInfo?.version ?? "99999.9.9"))) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.update,
+            size: 180,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          const Text(
+            "App update required!",
+            style: TextStyle(fontSize: 24),
+          ),
+          Text(
+              "The connected backend requires app version ${backendInfo?['min_app_version']} or newer.\nYou are using app version ${packageInfo?.version}")
+        ],
+      );
     }
 
     switch (_selectedIndex) {

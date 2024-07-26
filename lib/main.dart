@@ -563,16 +563,6 @@ class MyHomePageState extends State<MyHomePage> {
               desiredItemWidth: 220,
               children: [
                 Card(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.home_rounded,
-                          size: 200,
-                          color: Theme.of(context).colorScheme.primary),
-                    ],
-                  ),
-                ),
-                Card(
                   child: Stack(
                     alignment: Alignment.centerLeft,
                     children: [
@@ -679,7 +669,7 @@ class MyHomePageState extends State<MyHomePage> {
                     alignment: Alignment.centerLeft,
                     children: [
                       Icon(
-                        Icons.numbers,
+                        Icons.numbers_rounded,
                         size: 80,
                         color:
                             Theme.of(context).colorScheme.primary.withAlpha(58),
@@ -749,7 +739,7 @@ class MyHomePageState extends State<MyHomePage> {
                     alignment: Alignment.centerLeft,
                     children: [
                       Icon(
-                        Icons.computer,
+                        Icons.dns_rounded,
                         size: 80,
                         color:
                             Theme.of(context).colorScheme.primary.withAlpha(58),

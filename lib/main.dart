@@ -99,13 +99,14 @@ class MyHomePageState extends State<MyHomePage> {
     setState(() {});
   }
 
-  Future<void> fetchData() async {
+  Future<void> fetchData({bool fetchLatest = false}) async {
     if (apiBaseAddress != "") {
       waitingForData = true;
       _locations = await fetchLocations(apiBaseAddress);
       _sorters = await fetchSorters(apiBaseAddress);
       _parts = await fetchAllParts(apiBaseAddress);
-      if (backendInfo?.containsKey("latest_version") ?? false) {
+      if ((backendInfo?.containsKey("latest_version") ?? false) &&
+          !fetchLatest) {
         final backendInfoLatestVersion = backendInfo?["latest_version"];
         backendInfo =
             await fetchBackendInfo(apiBaseAddress, fetchGithub: false);
@@ -412,26 +413,41 @@ class MyHomePageState extends State<MyHomePage> {
                 icon: const Icon(Icons.info_outline))
         ],
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth < 600) {
-            // Use BottomNavigationBar for small screens
-            return Scaffold(
-              body: Center(child: _buildContent()),
-              bottomNavigationBar: _buildBottomNavigationBar(context),
-            );
-          } else {
-            // Use NavigationRail for larger screens
-            return Row(
-              children: <Widget>[
-                _buildNavigationRail(context),
-                Expanded(
-                  child: Center(child: _buildContent()),
-                ),
-              ],
-            );
+      body: RefreshIndicator(
+        onRefresh: () async {
+          if (_selectedIndex != 3) {
+            setState(() {
+              waitingForData = true;
+            });
+            await apiErrorCatcher(() async {
+              await fetchData(fetchLatest: _selectedIndex == 0);
+            });
+            setState(() {
+              waitingForData = false;
+            });
           }
         },
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 600) {
+              // Use BottomNavigationBar for small screens
+              return Scaffold(
+                body: Center(child: _buildContent()),
+                bottomNavigationBar: _buildBottomNavigationBar(context),
+              );
+            } else {
+              // Use NavigationRail for larger screens
+              return Row(
+                children: <Widget>[
+                  _buildNavigationRail(context),
+                  Expanded(
+                    child: Center(child: _buildContent()),
+                  ),
+                ],
+              );
+            }
+          },
+        ),
       ),
     );
   }
@@ -539,237 +555,242 @@ class MyHomePageState extends State<MyHomePage> {
 
     switch (_selectedIndex) {
       case 0:
-        return ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 670),
-          child: ResponsiveStaggeredGridList(
-            desiredItemWidth: 220,
-            children: [
-              Card(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.home_rounded,
-                        size: 200,
-                        color: Theme.of(context).colorScheme.primary),
-                  ],
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 670),
+            child: ResponsiveStaggeredGridList(
+              desiredItemWidth: 220,
+              children: [
+                Card(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.home_rounded,
+                          size: 200,
+                          color: Theme.of(context).colorScheme.primary),
+                    ],
+                  ),
                 ),
-              ),
-              Card(
-                child: Stack(
-                  alignment: Alignment.centerLeft,
-                  children: [
-                    Icon(
-                      Icons.room_rounded,
-                      size: 80,
-                      color:
-                          Theme.of(context).colorScheme.primary.withAlpha(58),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _locations.length.toString(),
-                          style: TextStyle(
-                              fontSize: 48,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary),
-                        ),
-                        Text(
-                          "Location${(_locations.length > 1) ? 's' : ''}",
-                          style: TextStyle(
-                            fontSize: 24,
-                            color: Theme.of(context).colorScheme.primary,
+                Card(
+                  child: Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      Icon(
+                        Icons.room_rounded,
+                        size: 80,
+                        color:
+                            Theme.of(context).colorScheme.primary.withAlpha(58),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _locations.length.toString(),
+                            style: TextStyle(
+                                fontSize: 48,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Card(
-                child: Stack(
-                  alignment: Alignment.centerLeft,
-                  children: [
-                    Icon(
-                      Icons.inventory_2_rounded,
-                      size: 80,
-                      color:
-                          Theme.of(context).colorScheme.primary.withAlpha(58),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _sorters.length.toString(),
-                          style: TextStyle(
-                              fontSize: 48,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary),
-                        ),
-                        const SizedBox(
-                          width: 4.0,
-                        ),
-                        Text(
-                          "Sorter${(_sorters.length > 1) ? 's' : ''}",
-                          style: TextStyle(
-                            fontSize: 24,
-                            color: Theme.of(context).colorScheme.primary,
+                          Text(
+                            "Location${(_locations.length > 1) ? 's' : ''}",
+                            style: TextStyle(
+                              fontSize: 24,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Card(
-                child: Stack(
-                  alignment: Alignment.centerLeft,
-                  children: [
-                    Icon(
-                      Icons.category_rounded,
-                      size: 80,
-                      color:
-                          Theme.of(context).colorScheme.primary.withAlpha(58),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _parts.length.toString(),
-                          style: TextStyle(
-                              fontSize: 48,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary),
-                        ),
-                        const SizedBox(
-                          width: 4.0,
-                        ),
-                        Text(
-                          "Part${(_parts.length > 1) ? 's' : ''}",
-                          style: TextStyle(
-                            fontSize: 24,
-                            color: Theme.of(context).colorScheme.primary,
+                Card(
+                  child: Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      Icon(
+                        Icons.inventory_2_rounded,
+                        size: 80,
+                        color:
+                            Theme.of(context).colorScheme.primary.withAlpha(58),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _sorters.length.toString(),
+                            style: TextStyle(
+                                fontSize: 48,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Card(
-                child: Stack(
-                  alignment: Alignment.centerLeft,
-                  children: [
-                    Icon(
-                      Icons.numbers,
-                      size: 80,
-                      color:
-                          Theme.of(context).colorScheme.primary.withAlpha(58),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          getTotalQuantity().toString(),
-                          style: TextStyle(
-                              fontSize: 48,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary),
-                        ),
-                        const SizedBox(
-                          width: 4.0,
-                        ),
-                        Text(
-                          "Total\nQuantity",
-                          style: TextStyle(
-                            fontSize: 24,
-                            color: Theme.of(context).colorScheme.primary,
+                          const SizedBox(
+                            width: 4.0,
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Card(
-                child: Stack(
-                  alignment: Alignment.centerLeft,
-                  children: [
-                    Icon(
-                      Icons.attach_money_rounded,
-                      size: 80,
-                      color:
-                          Theme.of(context).colorScheme.primary.withAlpha(58),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          getTotalValue().toStringAsFixed(2),
-                          style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary),
-                        ),
-                        const SizedBox(
-                          width: 4.0,
-                        ),
-                        Text(
-                          "Total\nValue",
-                          style: TextStyle(
-                            fontSize: 24,
-                            color: Theme.of(context).colorScheme.primary,
+                          Text(
+                            "Sorter${(_sorters.length > 1) ? 's' : ''}",
+                            style: TextStyle(
+                              fontSize: 24,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Card(
-                child: Stack(
-                  alignment: Alignment.centerLeft,
-                  children: [
-                    Icon(
-                      Icons.computer,
-                      size: 80,
-                      color:
-                          Theme.of(context).colorScheme.primary.withAlpha(58),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Column(
-                          children: [
-                            Text(
-                              "Backend Version",
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Theme.of(context).colorScheme.primary,
+                Card(
+                  child: Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      Icon(
+                        Icons.category_rounded,
+                        size: 80,
+                        color:
+                            Theme.of(context).colorScheme.primary.withAlpha(58),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _parts.length.toString(),
+                            style: TextStyle(
+                                fontSize: 48,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary),
+                          ),
+                          const SizedBox(
+                            width: 4.0,
+                          ),
+                          Text(
+                            "Part${(_parts.length > 1) ? 's' : ''}",
+                            style: TextStyle(
+                              fontSize: 24,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Card(
+                  child: Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      Icon(
+                        Icons.numbers,
+                        size: 80,
+                        color:
+                            Theme.of(context).colorScheme.primary.withAlpha(58),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            getTotalQuantity().toString(),
+                            style: TextStyle(
+                                fontSize: 48,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary),
+                          ),
+                          const SizedBox(
+                            width: 4.0,
+                          ),
+                          Text(
+                            "Total\nQuantity",
+                            style: TextStyle(
+                              fontSize: 24,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Card(
+                  child: Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      Icon(
+                        Icons.attach_money_rounded,
+                        size: 80,
+                        color:
+                            Theme.of(context).colorScheme.primary.withAlpha(58),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            getTotalValue().toStringAsFixed(2),
+                            style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary),
+                          ),
+                          const SizedBox(
+                            width: 4.0,
+                          ),
+                          Text(
+                            "Total\nValue",
+                            style: TextStyle(
+                              fontSize: 24,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Card(
+                  child: Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      Icon(
+                        Icons.computer,
+                        size: 80,
+                        color:
+                            Theme.of(context).colorScheme.primary.withAlpha(58),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Column(
+                            children: [
+                              Text(
+                                "Backend Version",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
                               ),
-                            ),
-                            Text(
-                              "Current - ${backendInfo?["version"]}",
-                              style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w600,
-                                  color: Theme.of(context).colorScheme.primary),
-                            ),
-                            Text(
-                              "Latest - ${backendInfo?["latest_version"]}",
-                              style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w600,
-                                  color: Theme.of(context).colorScheme.primary),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
+                              Text(
+                                "Current - ${backendInfo?["version"]}",
+                                style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w600,
+                                    color:
+                                        Theme.of(context).colorScheme.primary),
+                              ),
+                              Text(
+                                "Latest - ${backendInfo?["latest_version"]}",
+                                style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w600,
+                                    color:
+                                        Theme.of(context).colorScheme.primary),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       case 1:

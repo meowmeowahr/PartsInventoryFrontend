@@ -645,10 +645,14 @@ class LocationInfoPageState extends State<LocationInfoPage> {
                   padding: const EdgeInsets.all(8.0),
                   child: Row(
                     children: [
-                      const Icon(
-                        // String2Icon.getIconDataFromString(
-                        //     _sorters[index]['icon']),
-                        Icons.inventory_2,
+                      Icon(
+                        iconMap[_sortSorters(
+                                filterSorters(
+                                    filterSortersByLocationId(
+                                        locationId!, _sorters),
+                                    sorterSearchQuery),
+                                sortersSortType)[index]['icon']] ??
+                            Icons.inventory_2,
                         size: 64,
                       ),
                       Expanded(

@@ -8,9 +8,19 @@ import 'package:uuid/uuid.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:material_tag_editor/tag_editor.dart';
+import 'package:flutter_iconpicker/flutter_iconpicker.dart';
 
 import 'parts.dart';
 import 'widgets.dart';
+
+Map<String, IconData> iconMap = {
+  "blank": Icons.inventory_2_rounded,
+  "computer": Icons.computer_rounded,
+  "bolt": Icons.bolt_rounded,
+  "light": Icons.lightbulb_rounded,
+  "cable": Icons.cable_rounded,
+  "sensors": Icons.sensors_rounded,
+};
 
 class CreateSorterPage extends StatefulWidget {
   const CreateSorterPage({
@@ -336,6 +346,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
 
   String _pageTitle = "Sorter Information";
   String? sorterName;
+  String? sorterIcon;
   String? sorterId;
   String? sorterLocation;
   String? sorterLocationName;
@@ -364,6 +375,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
       setState(() {
         _pageTitle = data["name"];
         sorterName = data["name"];
+        sorterIcon = data["icon"];
         sorterId = data["id"];
         sorterAttrs = data["attrs"];
         sorterLocation = data["location"];
@@ -562,7 +574,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
     return Column(
       children: [
         Icon(
-          Icons.inventory_2_rounded,
+          iconMap[sorterIcon] ?? Icons.inventory_2_rounded,
           size: 240,
           color: Theme.of(context).colorScheme.primary,
         ),
@@ -1116,6 +1128,7 @@ class ModifySorterPage extends StatefulWidget {
 class ModifySorterPageState extends State<ModifySorterPage> {
   late String uniqueId;
   String? selectedLocation;
+  String? selectedIcon;
   List<String> sorterTags = [];
   bool enableIdentifyApi = false;
 
@@ -1133,6 +1146,7 @@ class ModifySorterPageState extends State<ModifySorterPage> {
     super.initState();
     uniqueId = widget.sorter['id'];
     selectedLocation = widget.sorter['location'];
+    selectedIcon = widget.sorter['icon'];
     sorterTags = widget.sorter['tags'].split(',');
     sorterTags.remove("");
 
@@ -1189,7 +1203,7 @@ class ModifySorterPageState extends State<ModifySorterPage> {
           'name': _sorterNameController.text,
           'id': uniqueId,
           'location': selectedLocation,
-          'icon': 'blank',
+          'icon': selectedIcon,
           'tags': sorterTags.join(","),
           'attrs': {
             "identify": enableIdentifyApi ? _identifyApiController.text : ""
@@ -1244,6 +1258,19 @@ class ModifySorterPageState extends State<ModifySorterPage> {
         ),
       );
     }
+  }
+
+  Future<void> _pickIcon() async {
+    IconData? icon = await showIconPicker(context,
+        adaptiveDialog: true,
+        iconPackModes: [IconPack.custom],
+        customIconPack: iconMap);
+
+    selectedIcon = iconMap.keys
+        .firstWhere((k) => iconMap[k] == icon, orElse: () => "blank");
+    setState(() {});
+
+    debugPrint('Picked Icon:  $icon');
   }
 
   @override
@@ -1319,6 +1346,30 @@ class ModifySorterPageState extends State<ModifySorterPage> {
                     },
                   ),
                 ),
+              ),
+            ),
+            const SizedBox(height: 8.0),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Theme.of(context).dividerColor,
+                ),
+                borderRadius: const BorderRadius.all(
+                  Radius.circular(5.0),
+                ),
+              ),
+              child: Row(
+                children: [
+                  // current icon
+                  Icon(iconMap[selectedIcon] ?? Icons.inventory_2_rounded),
+                  const Spacer(),
+                  ElevatedButton(
+                    onPressed: () {
+                      _pickIcon();
+                    },
+                    child: const Text("Pick icon"),
+                  ),
+                ],
               ),
             ),
             const Divider(),

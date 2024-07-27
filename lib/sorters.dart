@@ -1358,18 +1358,29 @@ class ModifySorterPageState extends State<ModifySorterPage> {
                   Radius.circular(5.0),
                 ),
               ),
-              child: Row(
-                children: [
-                  // current icon
-                  Icon(iconMap[selectedIcon] ?? Icons.inventory_2_rounded),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: () {
-                      _pickIcon();
-                    },
-                    child: const Text("Pick icon"),
-                  ),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Current Sorter Icon",
+                      style: TextStyle(fontSize: 15),
+                    ),
+                    // const Spacer(),
+                    Icon(
+                      iconMap[selectedIcon] ?? Icons.inventory_2_rounded,
+                      size: 48,
+                    ),
+                    // const Spacer(),
+                    ElevatedButton(
+                      onPressed: () {
+                        _pickIcon();
+                      },
+                      child: const Text("Pick icon"),
+                    ),
+                  ],
+                ),
               ),
             ),
             const Divider(),

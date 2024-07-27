@@ -759,6 +759,7 @@ class MyHomePageState extends State<MyHomePage> {
                               Text(
                                 "Current - ${backendInfo?["version"]}",
                                 style: TextStyle(
+                                    height: 1.1,
                                     fontSize: 22,
                                     fontWeight: FontWeight.w600,
                                     color:
@@ -767,6 +768,7 @@ class MyHomePageState extends State<MyHomePage> {
                               Text(
                                 "Latest - ${backendInfo?["latest_version"]}",
                                 style: TextStyle(
+                                    height: 1.1,
                                     fontSize: 22,
                                     fontWeight: FontWeight.w600,
                                     color:

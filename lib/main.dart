@@ -862,6 +862,7 @@ class MyHomePageState extends State<MyHomePage> {
                                       _sorters =
                                           await fetchSorters(apiBaseAddress);
                                     });
+                                    setState(() {});
                                   },
                                   onModify: () async {
                                     await apiErrorCatcher(() async {
@@ -998,10 +999,9 @@ class MyHomePageState extends State<MyHomePage> {
                             apiBaseAddress: apiBaseAddress,
                             onCreated: () async {
                               await apiErrorCatcher(() async {
-                                setState(() async {
-                                  _locations =
-                                      await fetchLocations(apiBaseAddress);
-                                });
+                                _locations =
+                                    await fetchLocations(apiBaseAddress);
+                                setState(() {});
                               });
                             },
                           ),
@@ -1093,6 +1093,7 @@ class MyHomePageState extends State<MyHomePage> {
                                       _sorters =
                                           await fetchSorters(apiBaseAddress);
                                     });
+                                    setState(() {});
                                   },
                                   onModify: () async {
                                     await apiErrorCatcher(() async {
@@ -1230,9 +1231,8 @@ class MyHomePageState extends State<MyHomePage> {
                           locations: _locations,
                           onCreated: () async {
                             await apiErrorCatcher(() async {
-                              setState(() async {
-                                _sorters = await fetchSorters(apiBaseAddress);
-                              });
+                              _sorters = await fetchSorters(apiBaseAddress);
+                              setState(() {});
                             });
                           },
                         ),

@@ -43,6 +43,7 @@ class CreateSorterPageState extends State<CreateSorterPage> {
   String sorterName = "";
   bool autoGenerateId = true;
   String? selectedLocation;
+  String selectedIcon = "blank";
   List<String> sorterTags = [];
   bool enableIdentifyApi = false;
 
@@ -112,7 +113,7 @@ class CreateSorterPageState extends State<CreateSorterPage> {
           'name': sorterName,
           'id': _uniqueIdController.text,
           'location': selectedLocation,
-          'icon': 'blank',
+          'icon': selectedIcon,
           'tags': sorterTags.join(","),
           'attrs': {
             "identity": enableIdentifyApi ? _identifyApiController.text : ""
@@ -163,6 +164,19 @@ class CreateSorterPageState extends State<CreateSorterPage> {
         ),
       );
     }
+  }
+
+  Future<void> _pickIcon() async {
+    IconData? icon = await showIconPicker(context,
+        adaptiveDialog: true,
+        iconPackModes: [IconPack.custom],
+        customIconPack: iconMap);
+
+    selectedIcon = iconMap.keys
+        .firstWhere((k) => iconMap[k] == icon, orElse: () => "blank");
+    setState(() {});
+
+    debugPrint('Picked Icon:  $icon');
   }
 
   @override
@@ -263,6 +277,41 @@ class CreateSorterPageState extends State<CreateSorterPage> {
                       _onTagDetete(index);
                     },
                   ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8.0),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Theme.of(context).dividerColor,
+                ),
+                borderRadius: const BorderRadius.all(
+                  Radius.circular(5.0),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Current Sorter Icon",
+                      style: TextStyle(fontSize: 15),
+                    ),
+                    // const Spacer(),
+                    Icon(
+                      iconMap[selectedIcon] ?? Icons.inventory_2_rounded,
+                      size: 48,
+                    ),
+                    // const Spacer(),
+                    ElevatedButton(
+                      onPressed: () {
+                        _pickIcon();
+                      },
+                      child: const Text("Pick icon"),
+                    ),
+                  ],
                 ),
               ),
             ),

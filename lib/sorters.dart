@@ -20,6 +20,17 @@ Map<String, IconData> iconMap = {
   "light": Icons.lightbulb_rounded,
   "cable": Icons.cable_rounded,
   "sensors": Icons.sensors_rounded,
+  "build": Icons.build_rounded,
+  "hardware": Icons.hardware_rounded,
+  "construction": Icons.construction_rounded,
+  "dashboard": Icons.dashboard_rounded,
+  "svideo": Icons.settings_input_svideo_rounded,
+  "hdmi": Icons.settings_input_hdmi_rounded,
+  "composite": Icons.settings_input_composite_rounded,
+  "antenna": Icons.settings_input_antenna_rounded,
+  "robot": Icons.smart_toy_rounded,
+  "chip": Icons.memory_rounded,
+  "devboard": Icons.developer_board_rounded,
 };
 
 class CreateSorterPage extends StatefulWidget {

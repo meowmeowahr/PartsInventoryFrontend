@@ -933,6 +933,7 @@ class PartInfoPageState extends State<PartInfoPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
+                  barrierDismissible: true,
                   builder: (context) => FutureBuilder<Map<String, dynamic>>(
                     future: _partInfo,
                     builder: (context, snapshot) {

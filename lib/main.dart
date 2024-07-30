@@ -850,6 +850,7 @@ class MyHomePageState extends State<MyHomePage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
+                                barrierDismissible: true,
                                 builder: (context) => LocationInfoPage(
                                   apiBaseAddress: apiBaseAddress,
                                   locationId: _sortLocations(
@@ -997,6 +998,7 @@ class MyHomePageState extends State<MyHomePage> {
                     Navigator.push(
                         context,
                         MaterialPageRoute(
+                          barrierDismissible: true,
                           builder: (context) => CreateLocationPage(
                             apiBaseAddress: apiBaseAddress,
                             onCreated: () async {
@@ -1080,6 +1082,7 @@ class MyHomePageState extends State<MyHomePage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
+                                barrierDismissible: true,
                                 builder: (context) => SorterInfoPage(
                                   apiBaseAddress: apiBaseAddress,
                                   sorterId: _sortSorters(
@@ -1228,6 +1231,7 @@ class MyHomePageState extends State<MyHomePage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
+                        barrierDismissible: true,
                         builder: (context) => CreateSorterPage(
                           apiBaseAddress: apiBaseAddress,
                           locations: _locations,

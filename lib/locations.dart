@@ -610,6 +610,7 @@ class LocationInfoPageState extends State<LocationInfoPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
+                      barrierDismissible: true,
                       builder: (context) => SorterInfoPage(
                         apiBaseAddress: widget.apiBaseAddress,
                         sorterId: _sortSorters(
@@ -751,6 +752,7 @@ class LocationInfoPageState extends State<LocationInfoPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
+                  barrierDismissible: true,
                   builder: (context) => FutureBuilder<Map<String, dynamic>>(
                     future: _locationInfo,
                     builder: (context, snapshot) {

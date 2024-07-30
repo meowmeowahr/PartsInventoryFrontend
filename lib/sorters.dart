@@ -835,6 +835,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
+                            barrierDismissible: true,
                             builder: (context) => PartInfoPage(
                               apiBaseAddress: widget.apiBaseAddress,
                               partId: _sortParts(
@@ -1010,6 +1011,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
+                  barrierDismissible: true,
                   builder: (context) => FutureBuilder<Map<String, dynamic>>(
                     future: _sorterInfo,
                     builder: (context, snapshot) {
@@ -1089,6 +1091,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
+                                    barrierDismissible: true,
                                     builder: (context) => CreatePartPage(
                                       apiBaseAddress: widget.apiBaseAddress,
                                       sorters: widget.sorters,
@@ -1132,6 +1135,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
+                                  barrierDismissible: true,
                                   builder: (context) => CreatePartPage(
                                     apiBaseAddress: widget.apiBaseAddress,
                                     sorters: widget.sorters,

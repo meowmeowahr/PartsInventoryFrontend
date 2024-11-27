@@ -615,7 +615,7 @@ class MyHomePageState extends State<MyHomePage> {
                                 color: Theme.of(context).colorScheme.primary),
                           ),
                           const SizedBox(
-                            width: 4.0,
+                            width: 12.0,
                           ),
                           Text(
                             "Sorter${(_sorters.length > 1) ? 's' : ''}",
@@ -650,7 +650,7 @@ class MyHomePageState extends State<MyHomePage> {
                                 color: Theme.of(context).colorScheme.primary),
                           ),
                           const SizedBox(
-                            width: 4.0,
+                            width: 12.0,
                           ),
                           Text(
                             "Part${(_parts.length > 1) ? 's' : ''}",
@@ -685,7 +685,7 @@ class MyHomePageState extends State<MyHomePage> {
                                 color: Theme.of(context).colorScheme.primary),
                           ),
                           const SizedBox(
-                            width: 4.0,
+                            width: 12.0,
                           ),
                           Text(
                             "Total\nQuantity",
@@ -713,14 +713,14 @@ class MyHomePageState extends State<MyHomePage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            getTotalValue().toStringAsFixed(2),
+                            "\$${getTotalValue().toStringAsFixed(2)}",
                             style: TextStyle(
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
                                 color: Theme.of(context).colorScheme.primary),
                           ),
                           const SizedBox(
-                            width: 4.0,
+                            width: 12.0,
                           ),
                           Text(
                             "Total\nValue",

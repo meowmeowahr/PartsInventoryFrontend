@@ -862,7 +862,7 @@ class PartInfoPageState extends State<PartInfoPage> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const Spacer(),
               Flexible(
-                flex: 2,
+                flex: 0,
                 child: Text(partNotes == "" ? "Empty" : partNotes,
                     style: const TextStyle(fontSize: 18)),
               )

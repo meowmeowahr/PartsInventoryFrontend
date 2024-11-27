@@ -425,15 +425,19 @@ class LocationInfoPageState extends State<LocationInfoPage> {
             ),
             const SizedBox(width: 4.0),
             IconButton(
-                onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: locationId!))
-                      .then((_) {
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(const SnackBar(content: Text('Copied!')));
-                  });
-                  // copied successfully
-                },
-                icon: const Icon(Icons.copy, size: 18))
+              onPressed: () async {
+                // Capture the ScaffoldMessengerState before the async operation
+                final messenger = ScaffoldMessenger.of(context);
+
+                await Clipboard.setData(ClipboardData(text: locationId!));
+
+                // Use the messenger directly, avoiding BuildContext issues
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Copied!')),
+                );
+              },
+              icon: const Icon(Icons.copy, size: 18),
+            ),
           ],
         ),
         Row(
@@ -648,11 +652,12 @@ class LocationInfoPageState extends State<LocationInfoPage> {
                     children: [
                       Icon(
                         iconMap[_sortSorters(
-                                filterSorters(
-                                    filterSortersByLocationId(
-                                        locationId!, _sorters),
-                                    sorterSearchQuery),
-                                sortersSortType)[index]['icon']] ??
+                                    filterSorters(
+                                        filterSortersByLocationId(
+                                            locationId!, _sorters),
+                                        sorterSearchQuery),
+                                    sortersSortType)[index]['icon']]
+                                ?.data ??
                             Icons.inventory_2,
                         size: 64,
                       ),

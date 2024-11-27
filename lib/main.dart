@@ -1126,9 +1126,10 @@ class MyHomePageState extends State<MyHomePage> {
                               children: [
                                 Icon(
                                   iconMap[_sortSorters(
-                                          filterSorters(
-                                              _sorters, sorterSearchQuery),
-                                          sortersSortType)[index]['icon']] ??
+                                              filterSorters(
+                                                  _sorters, sorterSearchQuery),
+                                              sortersSortType)[index]['icon']]
+                                          ?.data ??
                                       Icons.inventory_2,
                                   size: 64,
                                 ),

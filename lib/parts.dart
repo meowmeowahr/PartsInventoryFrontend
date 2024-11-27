@@ -764,12 +764,15 @@ class PartInfoPageState extends State<PartInfoPage> {
             const SizedBox(width: 4.0),
             IconButton(
                 onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: widget.partId))
-                      .then((_) {
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(const SnackBar(content: Text('Copied!')));
-                  });
-                  // copied successfully
+                  // Capture the ScaffoldMessengerState before the async operation
+                  final messenger = ScaffoldMessenger.of(context);
+
+                  await Clipboard.setData(ClipboardData(text: widget.partId));
+
+                  // Use the messenger directly, avoiding BuildContext issues
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('Copied!')),
+                  );
                 },
                 icon: const Icon(Icons.copy, size: 18))
           ],

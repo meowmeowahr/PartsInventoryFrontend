@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_iconpicker/Models/configuration.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:responsive_grid/responsive_grid.dart';
@@ -13,24 +14,53 @@ import 'package:flutter_iconpicker/flutter_iconpicker.dart';
 import 'parts.dart';
 import 'widgets.dart';
 
-Map<String, IconData> iconMap = {
-  "blank": Icons.inventory_2_rounded,
-  "computer": Icons.computer_rounded,
-  "bolt": Icons.bolt_rounded,
-  "light": Icons.lightbulb_rounded,
-  "cable": Icons.cable_rounded,
-  "sensors": Icons.sensors_rounded,
-  "build": Icons.build_rounded,
-  "hardware": Icons.hardware_rounded,
-  "construction": Icons.construction_rounded,
-  "dashboard": Icons.dashboard_rounded,
-  "svideo": Icons.settings_input_svideo_rounded,
-  "hdmi": Icons.settings_input_hdmi_rounded,
-  "composite": Icons.settings_input_composite_rounded,
-  "antenna": Icons.settings_input_antenna_rounded,
-  "robot": Icons.smart_toy_rounded,
-  "chip": Icons.memory_rounded,
-  "devboard": Icons.developer_board_rounded,
+Map<String, IconPickerIcon> iconMap = {
+  "blank": IconPickerIcon(
+      name: "blank", data: Icons.inventory_2_rounded, pack: IconPack.custom),
+  "computer": IconPickerIcon(
+      name: "computer", data: Icons.computer_rounded, pack: IconPack.custom),
+  "bolt": IconPickerIcon(
+      name: "bolt", data: Icons.bolt_rounded, pack: IconPack.custom),
+  "light": IconPickerIcon(
+      name: "light", data: Icons.lightbulb_rounded, pack: IconPack.custom),
+  "cable": IconPickerIcon(
+      name: "cable", data: Icons.cable_rounded, pack: IconPack.custom),
+  "sensors": IconPickerIcon(
+      name: "sensors", data: Icons.sensors_rounded, pack: IconPack.custom),
+  "build": IconPickerIcon(
+      name: "build", data: Icons.build_rounded, pack: IconPack.custom),
+  "hardware": IconPickerIcon(
+      name: "hardware", data: Icons.hardware_rounded, pack: IconPack.custom),
+  "construction": IconPickerIcon(
+      name: "construction",
+      data: Icons.construction_rounded,
+      pack: IconPack.custom),
+  "dashboard": IconPickerIcon(
+      name: "dashboard", data: Icons.dashboard_rounded, pack: IconPack.custom),
+  "svideo": IconPickerIcon(
+      name: "svideo",
+      data: Icons.settings_input_svideo_rounded,
+      pack: IconPack.custom),
+  "hdmi": IconPickerIcon(
+      name: "hdmi",
+      data: Icons.settings_input_hdmi_rounded,
+      pack: IconPack.custom),
+  "composite": IconPickerIcon(
+      name: "composite",
+      data: Icons.settings_input_composite_rounded,
+      pack: IconPack.custom),
+  "antenna": IconPickerIcon(
+      name: "antenna",
+      data: Icons.settings_input_antenna_rounded,
+      pack: IconPack.custom),
+  "robot": IconPickerIcon(
+      name: "robot", data: Icons.smart_toy_rounded, pack: IconPack.custom),
+  "chip": IconPickerIcon(
+      name: "chip", data: Icons.memory_rounded, pack: IconPack.custom),
+  "devboard": IconPickerIcon(
+      name: "devboard",
+      data: Icons.developer_board_rounded,
+      pack: IconPack.custom),
 };
 
 class CreateSorterPage extends StatefulWidget {
@@ -178,10 +208,11 @@ class CreateSorterPageState extends State<CreateSorterPage> {
   }
 
   Future<void> _pickIcon() async {
-    IconData? icon = await showIconPicker(context,
-        adaptiveDialog: true,
-        iconPackModes: [IconPack.custom],
-        customIconPack: iconMap);
+    IconPickerIcon? icon = await showIconPicker(context,
+        configuration: SinglePickerConfiguration(
+            adaptiveDialog: true,
+            iconPackModes: [IconPack.custom],
+            customIconPack: iconMap));
 
     selectedIcon = iconMap.keys
         .firstWhere((k) => iconMap[k] == icon, orElse: () => "blank");
@@ -312,7 +343,7 @@ class CreateSorterPageState extends State<CreateSorterPage> {
                     ),
                     // const Spacer(),
                     Icon(
-                      iconMap[selectedIcon] ?? Icons.inventory_2_rounded,
+                      iconMap[selectedIcon]?.data ?? Icons.inventory_2_rounded,
                       size: 48,
                     ),
                     // const Spacer(),
@@ -634,7 +665,7 @@ class SorterInfoPageState extends State<SorterInfoPage> {
     return Column(
       children: [
         Icon(
-          iconMap[sorterIcon] ?? Icons.inventory_2_rounded,
+          iconMap[sorterIcon]?.data ?? Icons.inventory_2_rounded,
           size: 240,
           color: Theme.of(context).colorScheme.primary,
         ),
@@ -654,12 +685,15 @@ class SorterInfoPageState extends State<SorterInfoPage> {
             const SizedBox(width: 4.0),
             IconButton(
                 onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: sorterId!))
-                      .then((_) {
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(const SnackBar(content: Text('Copied!')));
-                  });
-                  // copied successfully
+                  // Capture the ScaffoldMessengerState before the async operation
+                  final messenger = ScaffoldMessenger.of(context);
+
+                  await Clipboard.setData(ClipboardData(text: sorterId!));
+
+                  // Use the messenger directly, avoiding BuildContext issues
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('Copied!')),
+                  );
                 },
                 icon: const Icon(Icons.copy, size: 18))
           ],
@@ -1325,13 +1359,15 @@ class ModifySorterPageState extends State<ModifySorterPage> {
   }
 
   Future<void> _pickIcon() async {
-    IconData? icon = await showIconPicker(context,
-        adaptiveDialog: true,
-        iconPackModes: [IconPack.custom],
-        customIconPack: iconMap);
+    IconPickerIcon? icon = await showIconPicker(context,
+        configuration: SinglePickerConfiguration(
+            adaptiveDialog: true,
+            iconPackModes: [IconPack.custom],
+            customIconPack: iconMap));
 
-    selectedIcon = iconMap.keys
-        .firstWhere((k) => iconMap[k] == icon, orElse: () => "blank");
+    selectedIcon = iconMap.keys.firstWhere(
+        (k) => iconMap[k]?.data == icon?.data, // Use ?. to check for null
+        orElse: () => "blank");
     setState(() {});
 
     debugPrint('Picked Icon:  $icon');
@@ -1433,7 +1469,7 @@ class ModifySorterPageState extends State<ModifySorterPage> {
                     ),
                     // const Spacer(),
                     Icon(
-                      iconMap[selectedIcon] ?? Icons.inventory_2_rounded,
+                      iconMap[selectedIcon]?.data ?? Icons.inventory_2_rounded,
                       size: 48,
                     ),
                     // const Spacer(),

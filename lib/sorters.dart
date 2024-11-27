@@ -17,6 +17,8 @@ import 'widgets.dart';
 Map<String, IconPickerIcon> iconMap = {
   "blank": IconPickerIcon(
       name: "blank", data: Icons.inventory_2_rounded, pack: IconPack.custom),
+  "spaces": IconPickerIcon(
+      name: "space", data: Icons.space_dashboard, pack: IconPack.custom),
   "computer": IconPickerIcon(
       name: "computer", data: Icons.computer_rounded, pack: IconPack.custom),
   "bolt": IconPickerIcon(

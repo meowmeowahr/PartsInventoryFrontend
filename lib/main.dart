@@ -558,7 +558,7 @@ class MyHomePageState extends State<MyHomePage> {
         return SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 670),
+            constraints: const BoxConstraints(maxWidth: 800),
             child: ResponsiveStaggeredGridList(
               desiredItemWidth: 220,
               children: [

@@ -62,6 +62,7 @@ class MyHomePageState extends State<MyHomePage> {
   PackageInfo? packageInfo;
 
   String apiBaseAddress = "";
+  bool loadImages = false;
 
   int? _selectedIndex = 0;
 
@@ -135,6 +136,7 @@ class MyHomePageState extends State<MyHomePage> {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     apiBaseAddress = prefs.getString("apiBaseUrl") ?? "";
+    loadImages = prefs.getBool("loadImages") ?? false;
   }
 
   Future<void> _loadPackageInfo() async {
@@ -145,6 +147,12 @@ class MyHomePageState extends State<MyHomePage> {
     apiBaseAddress = value;
     final prefs = await SharedPreferences.getInstance();
     prefs.setString("apiBaseUrl", value);
+  }
+
+  Future<void> _setLoadImages(bool value) async {
+    loadImages = value;
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setBool("loadImages", value);
   }
 
   Future<List<dynamic>> fetchLocations(String apiBaseAddress) async {
@@ -903,6 +911,7 @@ class MyHomePageState extends State<MyHomePage> {
                                           await fetchSorters(apiBaseAddress);
                                     });
                                   },
+                                  loadImages: loadImages,
                                 ),
                               ),
                             );
@@ -1136,6 +1145,7 @@ class MyHomePageState extends State<MyHomePage> {
                                           await fetchSorters(apiBaseAddress);
                                     });
                                   },
+                                  loadImages: loadImages,
                                 ),
                               ),
                             );
@@ -1332,6 +1342,18 @@ class MyHomePageState extends State<MyHomePage> {
                 },
               ),
               const Divider(),
+              const Text(
+                'Performance',
+                style: TextStyle(fontSize: 22),
+              ),
+              CheckboxListTile(
+                  value: loadImages,
+                  title: Text("Load Part Images"),
+                  onChanged: (value) {
+                    setState(() {
+                      _setLoadImages(value!);
+                    });
+                  })
             ],
           ),
         );

@@ -248,6 +248,8 @@ class LocationInfoPage extends StatefulWidget {
   final Function onDelete;
   final Function onModify;
 
+  final bool loadImages;
+
   const LocationInfoPage({
     super.key,
     required this.apiBaseAddress,
@@ -255,6 +257,7 @@ class LocationInfoPage extends StatefulWidget {
     required this.onDelete,
     required this.onModify,
     required this.locations,
+    required this.loadImages,
   });
 
   @override
@@ -635,6 +638,7 @@ class LocationInfoPageState extends State<LocationInfoPage> {
                           Navigator.of(context).pop();
                           widget.onModify();
                         },
+                        loadImages: widget.loadImages,
                       ),
                     ),
                   );

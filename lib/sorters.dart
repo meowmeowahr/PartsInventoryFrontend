@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_iconpicker/Models/configuration.dart';
 import 'package:http/http.dart' as http;
+import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:responsive_grid/responsive_grid.dart';
 import 'package:uuid/uuid.dart';
@@ -64,6 +65,43 @@ Map<String, IconPickerIcon> iconMap = {
       data: Icons.developer_board_rounded,
       pack: IconPack.custom),
 };
+
+Uint8List resizeImage(Uint8List imageBytes, int maxWidth, int maxHeight) {
+  // Decode the image from Uint8List
+  img.Image? originalImage = img.decodeImage(imageBytes);
+
+  if (originalImage == null) {
+    throw Exception('Failed to decode image.');
+  }
+
+  // Calculate the aspect ratio
+  double aspectRatio = originalImage.width / originalImage.height;
+
+  // Determine the target width and height based on the max constraints
+  int targetWidth = originalImage.width;
+  int targetHeight = originalImage.height;
+
+  if (targetWidth > maxWidth || targetHeight > maxHeight) {
+    if (aspectRatio > 1) {
+      // Wider than tall, constrain by maxWidth
+      targetWidth = maxWidth;
+      targetHeight = (maxWidth / aspectRatio).round();
+    } else {
+      // Taller than wide, constrain by maxHeight
+      targetHeight = maxHeight;
+      targetWidth = (maxHeight * aspectRatio).round();
+    }
+  }
+
+  // Resize the image
+  img.Image resizedImage =
+      img.copyResize(originalImage, width: targetWidth, height: targetHeight);
+
+  // Convert the resized image back to Uint8List
+  Uint8List resizedBytes = Uint8List.fromList(img.encodeJpg(resizedImage));
+
+  return resizedBytes;
+}
 
 class CreateSorterPage extends StatefulWidget {
   const CreateSorterPage({
@@ -419,6 +457,8 @@ class SorterInfoPage extends StatefulWidget {
   final Function onDelete;
   final Function onModify;
 
+  final bool loadImages;
+
   const SorterInfoPage({
     super.key,
     required this.apiBaseAddress,
@@ -427,6 +467,7 @@ class SorterInfoPage extends StatefulWidget {
     required this.sorters,
     required this.onDelete,
     required this.onModify,
+    required this.loadImages,
   });
 
   @override
@@ -786,6 +827,45 @@ class SorterInfoPageState extends State<SorterInfoPage> {
     }
   }
 
+  Future<Uint8List?> _loadPartImage(String id) async {
+    try {
+      final url =
+          Uri.parse(p.join(widget.apiBaseAddress, 'parts_individual/$id'));
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data["image"] != null) {
+          return base64Decode(data["image"]);
+        } else {
+          return null;
+        }
+      } else {
+        throw Exception('Failed to load part information');
+      }
+    } catch (e) {
+      if (!mounted) rethrow;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Theme.of(context).colorScheme.error,
+          content: Column(
+            children: [
+              const Text(
+                'Part info fetch failed!',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                e.toString(),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return null;
+  }
+
   Widget _buildPartsPane() {
     return FutureBuilder<List<dynamic>>(
       future: parts,
@@ -929,12 +1009,36 @@ class SorterInfoPageState extends State<SorterInfoPage> {
                                 ),
                               ),
                             if ([null, ""].contains(sorterAttrs?["identify"]))
-                              const Icon(
-                                // String2Icon.getIconDataFromString(
-                                //     _sorters[index]['icon']),
-                                Icons.category_rounded,
-                                size: 64,
-                              ),
+                              if (widget.loadImages)
+                                FutureBuilder(
+                                  future: _loadPartImage(_sortParts(
+                                      filterParts(
+                                          snapshot.data!, partsSearchQuery),
+                                      partsSortType)[index]['id']),
+                                  builder: (BuildContext context,
+                                      AsyncSnapshot<Uint8List?> image) {
+                                    print(image.hasData);
+                                    if (image.hasData) {
+                                      return Image.memory(
+                                        resizeImage(image.data!, 64, 64),
+                                      ); // image is ready
+                                    } else {
+                                      return const Icon(
+                                        // String2Icon.getIconDataFromString(
+                                        //     _sorters[index]['icon']),
+                                        Icons.category_rounded,
+                                        size: 64,
+                                      ); // placeholder
+                                    }
+                                  },
+                                )
+                              else
+                                const Icon(
+                                  // String2Icon.getIconDataFromString(
+                                  //     _sorters[index]['icon']),
+                                  Icons.category_rounded,
+                                  size: 64,
+                                ),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
